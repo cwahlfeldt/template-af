@@ -1,5 +1,7 @@
+import { Template, IndustryType, TemplateType } from '../types/templates';
+
 // Template data structure
-const templates = [
+const templates: Template[] = [
   {
     id: "business-card",
     name: "Business Card",
@@ -471,14 +473,14 @@ const templates = [
 ];
 
 // Helper functions
-export const getAllTemplates = () => {
+export const getAllTemplates = (): Template[] => {
   return templates;
 };
 
-export const getTemplatesByIndustry = (industry) => {
+export const getTemplatesByIndustry = (industry: string): Template[] => {
   return templates.filter((template) => template.industry === industry);
 };
 
-export const getTemplateById = (id) => {
-  return templates.find((template) => template.id === id);
+export const getTemplateById = (id: string): Template | null => {
+  return templates.find((template) => template.id === id) || null;
 };

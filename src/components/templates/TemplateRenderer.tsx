@@ -2,24 +2,21 @@ import React from 'react';
 import BusinessCard from './BusinessCard';
 import Invoice from './Invoice';
 import SocialPost from './SocialPost';
+import { TemplateRendererProps } from '../../types/components';
+import { BusinessCardValues, InvoiceValues, SocialPostValues, TemplateType } from '../../types/templates';
 
 /**
  * Component that renders the appropriate template based on template type
  * 
- * @param {Object} props - Component props
- * @param {Object} props.template - Template definition
- * @param {Object} props.values - Template values
- * @param {function} props.onValueChange - Function to call when values change
- * @param {boolean} props.isEditMode - Whether edit mode is active
- * @param {string} props.size - Size variant for responsive templates
- * @returns {JSX.Element} The selected template component
+ * @param props - Component props
+ * @returns The selected template component
  */
-const TemplateRenderer = ({ template, values, onValueChange, isEditMode, size = 'default' }) => {
-  switch (template.type) {
+const TemplateRenderer: React.FC<TemplateRendererProps> = ({ template, values, onValueChange, isEditMode, size = 'default' }) => {
+  switch (template.type as TemplateType) {
     case 'business-card':
       return (
         <BusinessCard 
-          values={values} 
+          values={values as BusinessCardValues} 
           onValueChange={onValueChange} 
           isEditMode={isEditMode} 
         />
@@ -28,7 +25,7 @@ const TemplateRenderer = ({ template, values, onValueChange, isEditMode, size = 
     case 'invoice':
       return (
         <Invoice 
-          values={values} 
+          values={values as InvoiceValues} 
           onValueChange={onValueChange} 
           isEditMode={isEditMode} 
         />
@@ -37,7 +34,7 @@ const TemplateRenderer = ({ template, values, onValueChange, isEditMode, size = 
     case 'social-post':
       return (
         <SocialPost 
-          values={values} 
+          values={values as SocialPostValues} 
           onValueChange={onValueChange} 
           isEditMode={isEditMode}
           size={size}

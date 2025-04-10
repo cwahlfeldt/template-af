@@ -1,29 +1,32 @@
 import React, { useState } from "react";
+import { ImageUploadOverlayProps } from "../../types/components";
 
 /**
  * Component for adding image upload functionality to template images
- *
- * @param {Object} props - Component props
- * @param {string} props.fieldId - The field ID for the image
- * @param {function} props.onValueChange - Function to call when image changes
- * @param {boolean} props.isEditMode - Whether edit mode is active
- * @returns {JSX.Element|null} Image upload overlay or null when not in edit mode
+ * 
+ * @param props - Component props
+ * @returns Image upload overlay or null when not in edit mode
  */
-const ImageUploadOverlay = ({ fieldId, onValueChange, isEditMode }) => {
-  const [isHovered, setIsHovered] = useState(false);
+const ImageUploadOverlay: React.FC<ImageUploadOverlayProps> = ({ 
+  fieldId, 
+  onValueChange, 
+  isEditMode 
+}) => {
+  const [isHovered, setIsHovered] = useState<boolean>(false);
 
   if (!isEditMode) return null;
 
-  const handleImageClick = () => {
+  const handleImageClick = (): void => {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/*";
-    input.onchange = (e) => {
-      const file = e.target.files[0];
+    input.onchange = (e: Event) => {
+      const target = e.target as HTMLInputElement;
+      const file = target.files?.[0];
       if (file) {
         const reader = new FileReader();
-        reader.onload = (event) => {
-          onValueChange(fieldId, event.target.result);
+        reader.onload = (event: ProgressEvent<FileReader>) => {
+          onValueChange(fieldId, event.target?.result);
         };
         reader.readAsDataURL(file);
       }

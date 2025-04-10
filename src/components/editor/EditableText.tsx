@@ -1,18 +1,19 @@
 import React, { useState, useRef, useEffect } from "react";
+import { EditableTextProps } from "../../types/components";
 
 /**
  * Component for rendering editable text elements within templates
  */
-const EditableText = ({
+const EditableText: React.FC<EditableTextProps> = ({
   value,
   fieldId,
   className,
   onValueChange,
   isEditMode,
 }) => {
-  const [isHovered, setIsHovered] = useState(false);
-  const [isFocused, setIsFocused] = useState(false);
-  const contentRef = useRef(null);
+  const [isHovered, setIsHovered] = useState<boolean>(false);
+  const [isFocused, setIsFocused] = useState<boolean>(false);
+  const contentRef = useRef<HTMLSpanElement | null>(null);
 
   // Only update the inner HTML when the component mounts or value changes while not focused
   useEffect(() => {
@@ -42,9 +43,9 @@ const EditableText = ({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onFocus={() => setIsFocused(true)}
-      onBlur={(e) => {
+      onBlur={(e: React.FocusEvent<HTMLSpanElement>) => {
         setIsFocused(false);
-        onValueChange(fieldId, e.target.innerText);
+        onValueChange(fieldId, e.currentTarget.innerText);
       }}
       // Remove the onInput handler to prevent constant updates while typing
       data-field-id={fieldId}

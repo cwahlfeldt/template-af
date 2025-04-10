@@ -1,27 +1,31 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { HexColorPicker } from "react-colorful";
 import EditableText from "../editor/EditableText";
 import ImageUploadOverlay from "../editor/ImageUploadOverlay";
+import { SocialPostProps, SizeVariants } from "../../types/components";
 
 /**
  * Social Media Post template component
  */
-const SocialPost = ({
+const SocialPost: React.FC<SocialPostProps> = ({
   values,
   onValueChange,
   isEditMode,
   size = "instagram",
 }) => {
   // Add state to manage the color picker
-  const [showColorPicker, setShowColorPicker] = useState(false);
-  const [colorPickerPosition, setColorPickerPosition] = useState({
+  const [showColorPicker, setShowColorPicker] = useState<boolean>(false);
+  const [colorPickerPosition, setColorPickerPosition] = useState<{
+    top: number;
+    left: number;
+  }>({
     top: 0,
     left: 0,
   });
-  const colorPickerRef = useRef(null);
+  const colorPickerRef = useRef<HTMLDivElement | null>(null);
 
   // Size variants for different platforms
-  const sizeVariants = {
+  const sizeVariants: SizeVariants = {
     instagram: { width: 600, height: 600, className: "w-[600px] h-[600px]" },
     instagramStory: {
       width: 500,
@@ -33,16 +37,16 @@ const SocialPost = ({
     linkedin: { width: 600, height: 400, className: "w-[600px] h-[400px]" },
   };
 
-  const currentSize = sizeVariants[size] || sizeVariants.instagram;
+  const currentSize = sizeVariants[size as keyof SizeVariants] || sizeVariants.instagram;
 
   // Close picker when clicking outside
   useEffect(() => {
     if (!showColorPicker) return;
 
-    const handleClickOutside = (e) => {
+    const handleClickOutside = (e: MouseEvent) => {
       if (
         colorPickerRef.current &&
-        !colorPickerRef.current.contains(e.target)
+        !colorPickerRef.current.contains(e.target as Node)
       ) {
         setShowColorPicker(false);
       }
@@ -52,7 +56,7 @@ const SocialPost = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showColorPicker]);
 
-  const handleColorClick = (e) => {
+  const handleColorClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isEditMode) return;
 
     // Get the button's position

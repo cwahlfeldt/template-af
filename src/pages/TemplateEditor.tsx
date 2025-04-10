@@ -1,23 +1,30 @@
-import { useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toPng } from "html-to-image";
 import useTemplateValues from "../hooks/useTemplateValues";
 import TemplateRenderer from "../components/templates/TemplateRenderer";
+import { Template } from "../types/templates";
+
+interface PreviewOption {
+  id: string;
+  name: string;
+}
 
 /**
  * Template Editor page component
  * Allows users to edit and preview templates
  */
-function TemplateEditor() {
-  const { templateId } = useParams();
+const TemplateEditor: React.FC = () => {
+  const { templateId } = useParams<{ templateId: string }>();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("edit");
-  const [previewSize, setPreviewSize] = useState("default");
-  const templateRef = useRef(null);
+  const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
+  const [previewSize, setPreviewSize] = useState<string>("default");
+  const templateRef = useRef<HTMLDivElement | null>(null);
 
   // Use custom hook to manage template values
-  const { template, values, updateValue, loading } =
-    useTemplateValues(templateId);
+  const { template, values, updateValue, loading } = useTemplateValues(
+    templateId || ""
+  );
 
   // If template wasn't found, redirect to home
   if (!loading && !template) {
@@ -28,7 +35,7 @@ function TemplateEditor() {
   /**
    * Download the template as a PNG image
    */
-  const downloadTemplate = () => {
+  const downloadTemplate = (): void => {
     if (templateRef.current) {
       // Temporarily hide edit UI elements
       const prevMode = activeTab;
@@ -36,7 +43,8 @@ function TemplateEditor() {
 
       // Use setTimeout to ensure the UI updates before capturing
       setTimeout(() => {
-        toPng(templateRef.current)
+        // Use non-null assertion since we've already checked templateRef.current is not null
+        toPng(templateRef.current!)
           .then((dataUrl) => {
             const link = document.createElement("a");
             link.download = `${templateId}-template.png`;
@@ -58,7 +66,7 @@ function TemplateEditor() {
   const showSizeOptions = template?.template?.type === "social-post";
 
   // Get preview options based on template type
-  const getPreviewOptions = () => {
+  const getPreviewOptions = (): PreviewOption[] => {
     if (template?.template?.type === "social-post") {
       return [
         { id: "instagram", name: "Instagram (Square)" },
@@ -83,17 +91,17 @@ function TemplateEditor() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto flex gap-12">
-      <div>
+    <div className="flex gap-12 w-full">
+      {/* <div className="px-4 py-8 max-w-3/12">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold">{template.name}</h1>
-          <p className="text-gray-600">{template.description}</p>
+          <h1 className="text-3xl font-bold">{template?.name}</h1>
+          <p className="text-gray-600">{template?.description}</p>
         </div>
 
         <div className="mb-6 flex gap-4">
           <button
             onClick={downloadTemplate}
-            className="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700 transition-colors"
+            className="bg-blue-800 text-white px-6 py-2 rounded-md hover:bg-blue-900 transition-colors"
           >
             Download Template
           </button>
@@ -109,7 +117,9 @@ function TemplateEditor() {
               <select
                 id="preview-size"
                 value={previewSize}
-                onChange={(e) => setPreviewSize(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                  setPreviewSize(e.target.value)
+                }
                 className="border border-gray-300 rounded-md p-3 text-sm"
               >
                 {previewOptions.map((option) => (
@@ -155,23 +165,21 @@ function TemplateEditor() {
             </ul>
           </div>
         )}
-      </div>
+      </div> */}
 
-      <div className="flex justify-center">
-        <div className="bg-gray-100 p-6 rounded-lg shadow-md">
-          <div ref={templateRef}>
-            <TemplateRenderer
-              template={template.template}
-              values={values}
-              onValueChange={updateValue}
-              isEditMode={activeTab === "edit"}
-              size={previewSize}
-            />
-          </div>
+      <div className="flex justify-center items-center w-full bg-gray-100 p-6 h-full min-h-screen">
+        <div ref={templateRef}>
+          <TemplateRenderer
+            template={template!.template}
+            values={values}
+            onValueChange={updateValue}
+            isEditMode={activeTab === "edit"}
+            size={previewSize}
+          />
         </div>
       </div>
     </div>
   );
-}
+};
 
 export default TemplateEditor;

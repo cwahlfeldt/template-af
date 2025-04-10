@@ -1,25 +1,27 @@
 import { useState, useEffect } from 'react';
 import { getTemplateById } from '../data/templates';
+import { Template, TemplateValues } from '../types/templates';
+import { UseTemplateValuesReturn } from '../types/hooks';
 
 /**
  * Custom hook to manage template values and their updates
- * @param {string} templateId - The ID of the template to load
- * @returns {Object} Template data, values, and update function
+ * @param templateId - The ID of the template to load
+ * @returns Template data, values, and update function
  */
-const useTemplateValues = (templateId) => {
-  const [template, setTemplate] = useState(null);
-  const [values, setValues] = useState({});
-  const [loading, setLoading] = useState(true);
+const useTemplateValues = (templateId: string): UseTemplateValuesReturn => {
+  const [template, setTemplate] = useState<Template | null>(null);
+  const [values, setValues] = useState<TemplateValues>({});
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     // Fetch the template
     const fetchedTemplate = getTemplateById(templateId);
     
     if (fetchedTemplate) {
-      setTemplate(fetchedTemplate);
+      setTemplate(fetchedTemplate as Template);
       
       // Initialize form values with defaults
-      const initialValues = {};
+      const initialValues: TemplateValues = {};
       fetchedTemplate.template.fields.forEach(field => {
         initialValues[field.id] = field.default;
       });
@@ -33,7 +35,7 @@ const useTemplateValues = (templateId) => {
    * Update a template value by field ID
    * Handles both simple values and nested paths (e.g., 'items.0.description')
    */
-  const updateValue = (id, value) => {
+  const updateValue = (id: string, value: any): void => {
     // Handle nested object paths like 'items.0.description'
     if (id.includes('.')) {
       const parts = id.split('.');
