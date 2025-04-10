@@ -11,9 +11,10 @@ import SocialPost from './SocialPost';
  * @param {Object} props.values - Template values
  * @param {function} props.onValueChange - Function to call when values change
  * @param {boolean} props.isEditMode - Whether edit mode is active
+ * @param {string} props.size - Size variant for responsive templates
  * @returns {JSX.Element} The selected template component
  */
-const TemplateRenderer = ({ template, values, onValueChange, isEditMode }) => {
+const TemplateRenderer = ({ template, values, onValueChange, isEditMode, size = 'default' }) => {
   switch (template.type) {
     case 'business-card':
       return (
@@ -38,7 +39,8 @@ const TemplateRenderer = ({ template, values, onValueChange, isEditMode }) => {
         <SocialPost 
           values={values} 
           onValueChange={onValueChange} 
-          isEditMode={isEditMode} 
+          isEditMode={isEditMode}
+          size={size}
         />
       );
 

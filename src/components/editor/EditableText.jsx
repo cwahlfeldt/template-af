@@ -1,29 +1,54 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from "react";
 
 /**
  * Component for rendering editable text elements within templates
- * 
- * @param {Object} props - Component props
- * @param {string} props.value - The text value to display
- * @param {string} props.fieldId - The field ID for updates
- * @param {string} props.className - Additional CSS classes
- * @param {function} props.onValueChange - Function to call when value changes
- * @param {boolean} props.isEditMode - Whether edit mode is active
- * @returns {JSX.Element} Editable text element
  */
-const EditableText = ({ value, fieldId, className, onValueChange, isEditMode }) => {
+const EditableText = ({
+  value,
+  fieldId,
+  className,
+  onValueChange,
+  isEditMode,
+}) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
+  const contentRef = useRef(null);
+
+  // Only update the inner HTML when the component mounts or value changes while not focused
+  useEffect(() => {
+    if (contentRef.current && !isFocused) {
+      contentRef.current.innerText = value;
+    }
+  }, [value, isFocused]);
+
   if (!isEditMode) {
     return <span className={className}>{value}</span>;
   }
-  
+
   return (
     <span
-      className={`${className} cursor-text hover:bg-blue-50 hover:outline-dashed hover:outline-1 hover:outline-blue-300 focus:outline-dashed focus:outline-2 focus:outline-blue-500 focus:bg-blue-50`}
+      ref={contentRef}
+      className={`${className} cursor-text transition-all duration-200 
+        ${isHovered || isFocused ? "bg-blue-20" : ""}
+        ${isHovered ? "outline-dashed outline-1 outline-black-300" : ""}
+        ${
+          isFocused
+            ? "outline-dashed outline-2 outline-black-500 bg-blue-20"
+            : ""
+        }
+      `}
       contentEditable={true}
       suppressContentEditableWarning={true}
-      onBlur={(e) => onValueChange(fieldId, e.target.innerText)}
-      onInput={(e) => onValueChange(fieldId, e.target.innerText)}
-      dangerouslySetInnerHTML={{ __html: value }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onFocus={() => setIsFocused(true)}
+      onBlur={(e) => {
+        setIsFocused(false);
+        onValueChange(fieldId, e.target.innerText);
+      }}
+      // Remove the onInput handler to prevent constant updates while typing
+      data-field-id={fieldId}
+      title="Click to edit"
     />
   );
 };

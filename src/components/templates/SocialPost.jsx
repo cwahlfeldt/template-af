@@ -1,41 +1,91 @@
-import React from 'react';
-import EditableText from '../editor/EditableText';
-import ImageUploadOverlay from '../editor/ImageUploadOverlay';
+import React, { useState, useRef, useEffect } from "react";
+import { HexColorPicker } from "react-colorful";
+import EditableText from "../editor/EditableText";
+import ImageUploadOverlay from "../editor/ImageUploadOverlay";
 
 /**
  * Social Media Post template component
- * 
- * @param {Object} props - Component props
- * @param {Object} props.values - Template values
- * @param {function} props.onValueChange - Function to call when values change
- * @param {boolean} props.isEditMode - Whether edit mode is active
- * @returns {JSX.Element} Social media post template
  */
-const SocialPost = ({ values, onValueChange, isEditMode }) => {
-  const handleColorChange = () => {
-    if (!isEditMode) return;
-    
-    const color = prompt('Enter a new color (hex code, e.g. #ff5722):', values.brandColor);
-    if (color && /^#[0-9A-F]{6}$/i.test(color)) {
-      onValueChange('brandColor', color);
-    }
+const SocialPost = ({
+  values,
+  onValueChange,
+  isEditMode,
+  size = "instagram",
+}) => {
+  // Add state to manage the color picker
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [colorPickerPosition, setColorPickerPosition] = useState({
+    top: 0,
+    left: 0,
+  });
+  const colorPickerRef = useRef(null);
+
+  // Size variants for different platforms
+  const sizeVariants = {
+    instagram: { width: 600, height: 600, className: "w-[600px] h-[600px]" },
+    instagramStory: {
+      width: 500,
+      height: 889,
+      className: "w-[500px] h-[889px]",
+    },
+    facebook: { width: 628, height: 418, className: "w-[628px] h-[418px]" },
+    twitter: { width: 600, height: 335, className: "w-[600px] h-[335px]" },
+    linkedin: { width: 600, height: 400, className: "w-[600px] h-[400px]" },
   };
-  
+
+  const currentSize = sizeVariants[size] || sizeVariants.instagram;
+
+  // Close picker when clicking outside
+  useEffect(() => {
+    if (!showColorPicker) return;
+
+    const handleClickOutside = (e) => {
+      if (
+        colorPickerRef.current &&
+        !colorPickerRef.current.contains(e.target)
+      ) {
+        setShowColorPicker(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showColorPicker]);
+
+  const handleColorClick = (e) => {
+    if (!isEditMode) return;
+
+    // Get the button's position
+    const buttonRect = e.currentTarget.getBoundingClientRect();
+
+    // Set position for the color picker
+    setColorPickerPosition({
+      top: buttonRect.bottom + 5, // 5px below the button
+      left: buttonRect.left,
+    });
+
+    // Show the color picker
+    setShowColorPicker(true);
+
+    // Prevent event propagation
+    e.stopPropagation();
+  };
+
   return (
-    <div 
-      className="social-post rounded-lg shadow-md w-[600px] h-[600px] flex flex-col justify-between overflow-hidden relative"
-      style={{ backgroundColor: values.brandColor || '#ff5722' }}
+    <div
+      className={`social-post rounded-lg shadow-md ${currentSize.className} flex flex-col justify-between overflow-hidden relative`}
+      style={{ backgroundColor: values.brandColor || "#ff5722" }}
     >
       {values.backgroundImage && (
         <>
-          <div 
-            className="absolute inset-0 bg-cover bg-center opacity-75"
+          <div
+            className="absolute inset-0 bg-cover bg-center mix-blend-multiply"
             style={{ backgroundImage: `url(${values.backgroundImage})` }}
           />
           {isEditMode && (
-            <div className="absolute top-0 left-0 z-10 w-full h-full">
-              <ImageUploadOverlay 
-                fieldId="backgroundImage" 
+            <div className="absolute top-0 left-0 w-full h-full">
+              <ImageUploadOverlay
+                fieldId="backgroundImage"
                 onValueChange={onValueChange}
                 isEditMode={isEditMode}
               />
@@ -43,15 +93,19 @@ const SocialPost = ({ values, onValueChange, isEditMode }) => {
           )}
         </>
       )}
-      
+
       <div className="relative p-8 flex justify-between items-start">
         <div className="relative w-20 h-20">
           {values.logo && (
             <>
-              <img src={values.logo} alt="Logo" className="w-20 h-20 object-contain" />
+              <img
+                src={values.logo}
+                alt="Logo"
+                className="w-20 h-20 object-contain"
+              />
               {isEditMode && (
-                <ImageUploadOverlay 
-                  fieldId="logo" 
+                <ImageUploadOverlay
+                  fieldId="logo"
                   onValueChange={onValueChange}
                   isEditMode={isEditMode}
                 />
@@ -59,41 +113,66 @@ const SocialPost = ({ values, onValueChange, isEditMode }) => {
             </>
           )}
         </div>
-        
+
         {isEditMode && (
-          <div 
+          <div
+            id="color-picker"
             className="z-10 p-2 bg-white rounded-full shadow-md cursor-pointer"
-            onClick={handleColorChange}
+            onClick={handleColorClick}
+            title="Click to change background color"
           >
-            <span className="block w-6 h-6 rounded-full" style={{ backgroundColor: values.brandColor }} />
+            <span
+              className="block w-6 h-6 rounded-full"
+              style={{ backgroundColor: values.brandColor }}
+            />
+          </div>
+        )}
+
+        {/* Color picker popup */}
+        {showColorPicker && isEditMode && (
+          <div
+            ref={colorPickerRef}
+            className="absolute z-50"
+            style={{
+              position: "fixed",
+              top: `${colorPickerPosition.top}px`,
+              left: `${colorPickerPosition.left}px`,
+            }}
+          >
+            <div className="p-2 bg-white rounded-lg shadow-lg">
+              <HexColorPicker
+                color={values.brandColor || "#fda286"}
+                onChange={(color) => onValueChange("brandColor", color)}
+              />
+            </div>
           </div>
         )}
       </div>
-      
+
       <div className="relative p-8 text-white text-center">
         <h2 className="text-4xl font-bold mb-4 drop-shadow-md">
-          <EditableText 
-            value={values.headline} 
-            fieldId="headline" 
-            className="block" 
+          <EditableText
+            value={values.headline}
+            fieldId="headline"
+            className="block"
             onValueChange={onValueChange}
             isEditMode={isEditMode}
           />
         </h2>
         <p className="text-xl mb-8 drop-shadow-md">
-          <EditableText 
-            value={values.subtext} 
-            fieldId="subtext" 
-            className="block" 
+          <EditableText
+            value={values.subtext}
+            fieldId="subtext"
+            className="block"
             onValueChange={onValueChange}
             isEditMode={isEditMode}
           />
         </p>
         <button className="bg-white text-black font-semibold py-3 px-8 rounded-full text-xl">
-          <EditableText 
-            value={values.callToAction} 
-            fieldId="callToAction" 
-            className="inline" 
+          <EditableText
+            value={values.callToAction}
+            fieldId="callToAction"
+            className="inline"
             onValueChange={onValueChange}
             isEditMode={isEditMode}
           />
