@@ -25,7 +25,7 @@ const TemplateList: React.FC = () => {
     : "All";
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="container mx-auto">
       <h1 className="text-3xl font-bold mb-6">
         {industryDisplayName} Templates
       </h1>

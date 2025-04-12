@@ -4,6 +4,8 @@ import { toPng } from "html-to-image";
 import useTemplateValues from "../hooks/useTemplateValues";
 import TemplateRenderer from "../components/templates/TemplateRenderer";
 import { Template } from "../types/templates";
+import FlowBoard from "src/components/flowBoard/FlowBoard";
+import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 
 interface PreviewOption {
   id: string;
@@ -50,13 +52,9 @@ const TemplateEditor: React.FC = () => {
             link.download = `${templateId}-template.png`;
             link.href = dataUrl;
             link.click();
-
-            // Restore previous mode
-            setActiveTab(prevMode);
           })
           .catch((error) => {
             console.error("Error generating image:", error);
-            setActiveTab(prevMode);
           });
       }, 100);
     }
@@ -91,7 +89,7 @@ const TemplateEditor: React.FC = () => {
   }
 
   return (
-    <div className="flex gap-12 w-full">
+    <div className=" justify-center gap-12 w-full">
       {/* <div className="px-4 py-8 max-w-3/12">
         <div className="mb-6">
           <h1 className="text-3xl font-bold">{template?.name}</h1>
@@ -167,15 +165,46 @@ const TemplateEditor: React.FC = () => {
         )}
       </div> */}
 
-      <div className="flex justify-center items-center w-full bg-gray-100 p-6 h-full min-h-screen">
-        <div ref={templateRef}>
-          <TemplateRenderer
-            template={template!.template}
-            values={values}
-            onValueChange={updateValue}
-            isEditMode={activeTab === "edit"}
-            size={previewSize}
-          />
+      <div className="flex w-screen relative justify-center items-center bg-gray-100 h-full min-h-screen">
+        <div className="relative" ref={templateRef}>
+          {/* <div className="absolute -bottom-0 -right-12 z-20">
+            <button
+              onClick={downloadTemplate}
+              className="bg-blue-800 text-white cursor-pointer w-10 h-10 rounded-full flex items-center justify-center hover:bg-blue-900 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" // Added focus styles for accessibility
+              aria-label="Download Template" // Good for screen readers
+              title="Download Template" // Provides a tooltip on hover
+            >
+            
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 rotate-180" // Adjust icon size as needed
+                viewBox="0 0 20 20"
+                fill="currentColor" // Uses the text-white color from the button
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm6-14a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 6.414V13a1 1 0 11-2 0V6.414L6.707 8.414A1 1 0 015.293 7l4-4z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </button> */}
+          {/* </div> */}
+          <TransformWrapper
+            limitToBounds={false}
+            centerZoomedOut={true}
+            centerOnInit={true}
+            smooth={true}
+          >
+            <TransformComponent>
+              <TemplateRenderer
+                template={template!.template}
+                values={values}
+                onValueChange={updateValue}
+                isEditMode={activeTab === "edit"}
+                size={previewSize}
+              />
+            </TransformComponent>
+          </TransformWrapper>
         </div>
       </div>
     </div>

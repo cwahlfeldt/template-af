@@ -1,78 +1,113 @@
-import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import React from "react";
 
 function Navbar() {
   const location = useLocation();
+  const isVertical = location.pathname.startsWith("/editor");
 
-  const isActive = (path: string) => {
+  const isActive = (path: string): string => {
     return location.pathname === path
-      ? "bg-blue-900 text-white"
-      : "text-indigo-100 hover:bg-blue-900 hover:text-white";
+      ? "bg-blue-100/60 text-blue-700 font-semibold"
+      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900";
   };
 
+  const navBaseClasses =
+    "fixed top-4 z-50 m-4 bg-white/80 backdrop-blur-md rounded-lg shadow-lg border border-gray-200/50 transition-all duration-300 ease-in-out flex";
+
+  const navLayoutClasses = isVertical
+    ? "flex-col w-60 h-auto p-2"
+    : "flex-row items-center w-auto mx-auto max-w-fit p-1.5  inset-x-0 max-w-max mx-auto"; // max-w-fit makes it hug content horizontally
+
+  const listBaseClasses = "flex items-center"; // items-center works for both row/col alignment here
+
+  const listLayoutClasses = isVertical
+    ? "flex-col space-y-1 w-full"
+    : "flex-row space-x-1";
+
+  const linkBaseClasses =
+    "flex items-center rounded-md transition-colors duration-150 text-sm";
+
+  const linkPaddingClasses = isVertical ? "px-3 py-2 w-full" : "px-2.5 py-1.5"; // w-full for vertical links bg
+
+  const logoContainerClasses = `shrink-0 ${
+    isVertical
+      ? "py-3 px-3 border-b border-gray-200/80 mb-2 text-center"
+      : "px-2"
+  }`;
+
+  const logoTextClasses = `font-bold tracking-wider group-hover:text-blue-600 transition-colors duration-200 ${
+    isVertical ? "text-xl text-gray-800" : "text-lg text-gray-700"
+  }`;
+
+  const linksContainerClasses = `flex ${
+    isVertical ? "flex-grow py-2" : "justify-start"
+  }`; // flex-grow for vertical footer push
+
   return (
-    <nav className="h-full bg-blue-800 text-white shadow-xl flex flex-col w-60 transition-all duration-300 ease-in-out">
-      {/* Logo section */}
-      <div className="py-4 px-6 border-b border-indigo-700">
-        <Link to="/" className="flex items-center space-x-3">
-          <span className="text-2xl font-bold tracking-wider">TemplateAF</span>
+    <nav className={`${navBaseClasses} ${navLayoutClasses}`}>
+      <div className={logoContainerClasses}>
+        <Link
+          to="/"
+          className="flex justify-center items-center space-x-2 group"
+        >
+          <span className={logoTextClasses}>
+            <img className="max-w-dvw" src="/logo.svg" alt="logo" />
+          </span>
         </Link>
       </div>
 
-      {/* Navigation Links */}
-      <div className="flex-1 overflow-y-auto py-4">
-        <div className="mb-6">
-          <ul className="space-y-1">
-            <li>
-              <Link
-                to="/"
-                className={`flex items-center px-4 py-3 rounded-md transition-colors duration-200 ${isActive(
-                  "/"
-                )}`}
-              >
-                <span className="ml-2">Home</span>
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/templates/business"
-                className={`flex items-center px-4 py-3 rounded-md transition-colors duration-200 ${isActive(
-                  "/templates/business"
-                )}`}
-              >
-                <span className="ml-2">Business</span>
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/templates/marketing"
-                className={`flex items-center px-4 py-3 rounded-md transition-colors duration-200 ${isActive(
-                  "/templates/marketing"
-                )}`}
-              >
-                <span className="ml-2">Marketing</span>
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/templates/education"
-                className={`flex items-center px-4 py-3 rounded-md transition-colors duration-200 ${isActive(
-                  "/templates/education"
-                )}`}
-              >
-                <span className="ml-2">Education</span>
-              </Link>
-            </li>
-          </ul>
-        </div>
+      <div className={linksContainerClasses}>
+        <ul className={`${listBaseClasses} ${listLayoutClasses}`}>
+          <li>
+            <Link
+              to="/"
+              className={`${linkBaseClasses} ${linkPaddingClasses} ${isActive(
+                "/"
+              )}`}
+            >
+              <span className={isVertical ? "ml-1" : ""}>Home</span>
+            </Link>
+          </li>
+          <li>
+            <Link
+              to="/templates/business"
+              className={`${linkBaseClasses} ${linkPaddingClasses} ${isActive(
+                "/templates/business"
+              )}`}
+            >
+              <span className={isVertical ? "ml-1" : ""}>Business</span>
+            </Link>
+          </li>
+          <li>
+            <Link
+              to="/templates/marketing"
+              className={`${linkBaseClasses} ${linkPaddingClasses} ${isActive(
+                "/templates/marketing"
+              )}`}
+            >
+              <span className={isVertical ? "ml-1" : ""}>Marketing</span>
+            </Link>
+          </li>
+          <li>
+            <Link
+              to="/templates/education"
+              className={`${linkBaseClasses} ${linkPaddingClasses} ${isActive(
+                "/templates/education"
+              )}`}
+            >
+              <span className={isVertical ? "ml-1" : ""}>Education</span>
+            </Link>
+          </li>
+        </ul>
       </div>
 
-      {/* Footer section - optional */}
-      <div className="p-4 border-t border-indigo-700">
-        <p className="text-xs text-indigo-300 text-center">
-          © 2025 Template AF
-        </p>
-      </div>
+      {isVertical && (
+        <div className="mt-auto p-3 border-t border-gray-200/80">
+          <p className="text-xs text-gray-500 text-center">
+            © 2025 Template AF
+          </p>
+        </div>
+      )}
     </nav>
   );
 }

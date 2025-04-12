@@ -17,7 +17,7 @@ const industries = [
 
 function Home() {
   return (
-    <div className="mx-auto container max-w-4xl py-8">
+    <div className="mx-auto container">
       <section className="text-center mb-12">
         <h1 className="text-4xl font-bold mb-4">Welcome to Template AF</h1>
         <p className="text-xl text-gray-600 mb-6">

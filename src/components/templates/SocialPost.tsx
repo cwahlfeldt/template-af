@@ -37,7 +37,8 @@ const SocialPost: React.FC<SocialPostProps> = ({
     linkedin: { width: 600, height: 400, className: "w-[600px] h-[400px]" },
   };
 
-  const currentSize = sizeVariants[size as keyof SizeVariants] || sizeVariants.instagram;
+  const currentSize =
+    sizeVariants[size as keyof SizeVariants] || sizeVariants.instagram;
 
   // Close picker when clicking outside
   useEffect(() => {
@@ -87,7 +88,7 @@ const SocialPost: React.FC<SocialPostProps> = ({
             style={{ backgroundImage: `url(${values.backgroundImage})` }}
           />
           {isEditMode && (
-            <div className="absolute top-0 left-0 w-full h-full">
+            <div className="absolute top-0 left-0 w-full h-full z-10">
               <ImageUploadOverlay
                 fieldId="backgroundImage"
                 onValueChange={onValueChange}
@@ -99,13 +100,13 @@ const SocialPost: React.FC<SocialPostProps> = ({
       )}
 
       <div className="relative p-8 flex justify-between items-start">
-        <div className="relative w-20 h-20">
+        <div className="relative w-48 z-20">
           {values.logo && (
             <>
               <img
                 src={values.logo}
                 alt="Logo"
-                className="w-20 h-20 object-contain"
+                className="w-full h-20 object-contain"
               />
               {isEditMode && (
                 <ImageUploadOverlay
@@ -121,7 +122,7 @@ const SocialPost: React.FC<SocialPostProps> = ({
         {isEditMode && (
           <div
             id="color-picker"
-            className="z-10 p-2 bg-white rounded-full shadow-md cursor-pointer"
+            className="z-20 p-2 bg-white rounded-full shadow-md cursor-pointer"
             onClick={handleColorClick}
             title="Click to change background color"
           >
@@ -153,8 +154,8 @@ const SocialPost: React.FC<SocialPostProps> = ({
         )}
       </div>
 
-      <div className="relative p-8 text-white text-center">
-        <h2 className="text-4xl font-bold mb-4 drop-shadow-md">
+      <div className=" p-8 text-white text-center">
+        <h2 className="text-4xl font-bold mb-4 drop-shadow-md z-20 relative">
           <EditableText
             value={values.headline}
             fieldId="headline"
@@ -163,7 +164,7 @@ const SocialPost: React.FC<SocialPostProps> = ({
             isEditMode={isEditMode}
           />
         </h2>
-        <p className="text-xl mb-8 drop-shadow-md">
+        <p className="relative text-xl mb-8 drop-shadow-md z-20">
           <EditableText
             value={values.subtext}
             fieldId="subtext"
@@ -172,7 +173,7 @@ const SocialPost: React.FC<SocialPostProps> = ({
             isEditMode={isEditMode}
           />
         </p>
-        <button className="bg-white text-black font-semibold py-3 px-8 rounded-full text-xl">
+        <button className="bg-white relative text-black font-semibold py-3 px-8 rounded-full text-xl z-20">
           <EditableText
             value={values.callToAction}
             fieldId="callToAction"
