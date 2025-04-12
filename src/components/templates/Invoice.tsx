@@ -41,7 +41,7 @@ const Invoice: React.FC<InvoiceProps> = ({
 
   return (
     <div className="invoice bg-white p-6 rounded-lg shadow-md w-[800px] border border-gray-200">
-      <div className="flex justify-between items-start mb-8">
+      <div className="flex justify-between items-center mb-8">
         <div>
           <h2 className="text-2xl font-bold text-gray-800">
             <EditableText
@@ -62,13 +62,13 @@ const Invoice: React.FC<InvoiceProps> = ({
             />
           </p>
         </div>
-        <div className="relative w-24 h-24">
+        <div className="relative">
           {values.logo && (
             <>
               <img
                 src={values.logo}
                 alt="Logo"
-                className="w-24 h-24 object-contain"
+                className="w-48 h-max object-contain"
               />
               <ImageUploadOverlay
                 fieldId="logo"

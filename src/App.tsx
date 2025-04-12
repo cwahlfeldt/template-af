@@ -12,7 +12,7 @@ const App: React.FC = () => {
   return (
     <Router>
       {/* Set a background color or global styles on the root if needed */}
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-latte-base">
         {" "}
         {/* Example background */}
         {/* Navbar is rendered once, outside the main layout */}

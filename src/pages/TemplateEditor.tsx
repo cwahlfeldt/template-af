@@ -89,12 +89,16 @@ const TemplateEditor: React.FC = () => {
   }
 
   return (
-    <div className=" justify-center gap-12 w-full">
-      {/* <div className="px-4 py-8 max-w-3/12">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold">{template?.name}</h1>
-          <p className="text-gray-600">{template?.description}</p>
-        </div>
+    <>
+      <div className="absolute top-4 left-4 mb-6 z-1 ">
+        <h1 className="text-latte-pink text-5xl font-stretch-ultra-condensed font-extrabold italic">
+          {template?.name}
+        </h1>
+        <p className="text-latte-overlay2">{template?.description}</p>
+      </div>
+      <div className="justify-center gap-12 w-full">
+        {/* <div className="px-4 py-8 max-w-3/12">
+
 
         <div className="mb-6 flex gap-4">
           <button
@@ -165,9 +169,9 @@ const TemplateEditor: React.FC = () => {
         )}
       </div> */}
 
-      <div className="flex w-screen relative justify-center items-center bg-gray-100 h-full min-h-screen">
-        <div className="relative" ref={templateRef}>
-          {/* <div className="absolute -bottom-0 -right-12 z-20">
+        <div className="p-6 flex w-screen relative justify-center items-center h-full min-h-screen">
+          <div className="relative" ref={templateRef}>
+            {/* <div className="absolute -bottom-0 -right-12 z-20">
             <button
               onClick={downloadTemplate}
               className="bg-blue-800 text-white cursor-pointer w-10 h-10 rounded-full flex items-center justify-center hover:bg-blue-900 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" // Added focus styles for accessibility
@@ -188,14 +192,10 @@ const TemplateEditor: React.FC = () => {
                 />
               </svg>
             </button> */}
-          {/* </div> */}
-          <TransformWrapper
-            limitToBounds={false}
-            centerZoomedOut={true}
-            centerOnInit={true}
-            smooth={true}
-          >
-            <TransformComponent>
+            {/* </div> */}
+            {/* <TransformWrapper centerOnInit={true} smooth={true}>
+            <TransformComponent> */}
+            <div className="ml-8 mt-8">
               <TemplateRenderer
                 template={template!.template}
                 values={values}
@@ -203,11 +203,13 @@ const TemplateEditor: React.FC = () => {
                 isEditMode={activeTab === "edit"}
                 size={previewSize}
               />
-            </TransformComponent>
-          </TransformWrapper>
+            </div>
+            {/* </TransformComponent>
+          </TransformWrapper> */}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
