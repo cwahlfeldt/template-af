@@ -11,10 +11,8 @@ const BusinessCard: React.FC<BusinessCardProps> = ({
   values,
   onValueChange,
   isEditMode,
+  cardStyle = "standard",
 }) => {
-  const [design, setDesign] = useState<"standard" | "modern" | "minimal">(
-    "standard"
-  );
 
   // Different design layouts
   const designs: Record<string, string> = {
@@ -23,36 +21,11 @@ const BusinessCard: React.FC<BusinessCardProps> = ({
     minimal: "Minimal",
   };
 
-  // Only show the design selector in edit mode
-  const DesignSelector: React.FC = () => {
-    if (!isEditMode) return null;
-
-    return (
-      <div className="absolute -top-12 left-0 flex items-center space-x-2">
-        <span className="text-xs font-medium text-gray-700">Card Style:</span>
-        <select
-          value={design}
-          onChange={(e) =>
-            setDesign(e.target.value as "standard" | "modern" | "minimal")
-          }
-          className="text-xs border border-gray-300 rounded-md p-1"
-        >
-          {Object.entries(designs).map(([key, label]) => (
-            <option key={key} value={key}>
-              {label}
-            </option>
-          ))}
-        </select>
-      </div>
-    );
-  };
-
   // Render the appropriate design
-  switch (design) {
+  switch (cardStyle) {
     case "modern":
       return (
         <div className="relative">
-          <DesignSelector />
           <div className="business-card bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg shadow-md w-[350px] h-[200px] flex flex-col p-2">
             <div className="flex justify-between items-start">
               <div>
@@ -142,7 +115,6 @@ const BusinessCard: React.FC<BusinessCardProps> = ({
     case "minimal":
       return (
         <div className="relative">
-          <DesignSelector />
           <div className="business-card bg-white rounded-lg shadow-md w-[350px] h-[200px] flex flex-col p-2 border-l-4 border-gray-800">
             <div>
               <h2 className="text-2xl font-light text-gray-800 mb-1">
@@ -239,7 +211,6 @@ const BusinessCard: React.FC<BusinessCardProps> = ({
     default:
       return (
         <div className="relative">
-          <DesignSelector />
           <div className="business-card bg-white rounded-lg shadow-md w-[350px] h-[200px] flex flex-col p-2 border border-gray-200">
             <div className="flex justify-between items-start">
               <div>

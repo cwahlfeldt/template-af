@@ -22,6 +22,7 @@ const TemplateEditor: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
   const [previewSize, setPreviewSize] = useState<string>("default");
+  const [cardStyle, setCardStyle] = useState<"standard" | "modern" | "minimal">("standard");
   const templateRef = useRef<HTMLDivElement | null>(null);
 
   // Use custom hook to manage template values
@@ -107,6 +108,9 @@ const TemplateEditor: React.FC = () => {
         previewSize={previewSize}
         previewOptions={previewOptions}
         onPreviewSizeChange={(size) => setPreviewSize(size)}
+        templateType={template?.template?.type}
+        cardStyle={cardStyle}
+        onCardStyleChange={(style) => setCardStyle(style as "standard" | "modern" | "minimal")}
       />
       <div className="justify-center gap-12 w-full">
         <div className="p-6 flex w-screen relative justify-center items-center h-full min-h-screen">
@@ -117,6 +121,7 @@ const TemplateEditor: React.FC = () => {
               onValueChange={updateValue}
               isEditMode={activeTab === "edit"}
               size={previewSize}
+              cardStyle={cardStyle}
             />
           </div>
         </div>

@@ -11,14 +11,22 @@ import { BusinessCardValues, InvoiceValues, SocialPostValues, TemplateType } fro
  * @param props - Component props
  * @returns The selected template component
  */
-const TemplateRenderer: React.FC<TemplateRendererProps> = ({ template, values, onValueChange, isEditMode, size = 'default' }) => {
+const TemplateRenderer: React.FC<TemplateRendererProps> = ({ 
+  template, 
+  values, 
+  onValueChange, 
+  isEditMode, 
+  size = 'default',
+  cardStyle = 'standard'
+}) => {
   switch (template.type as TemplateType) {
     case 'business-card':
       return (
         <BusinessCard 
           values={values as BusinessCardValues} 
           onValueChange={onValueChange} 
-          isEditMode={isEditMode} 
+          isEditMode={isEditMode}
+          cardStyle={cardStyle}
         />
       );
 

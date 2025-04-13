@@ -35,6 +35,9 @@ interface TemplateControlsProps {
   previewSize?: string;
   previewOptions?: PreviewOption[];
   onPreviewSizeChange?: (size: string) => void;
+  templateType?: string;
+  cardStyle?: string;
+  onCardStyleChange?: (style: string) => void;
   // Future props will go here for additional controls
 }
 
@@ -47,7 +50,19 @@ const TemplateControls: React.FC<TemplateControlsProps> = ({
   previewSize = "default",
   previewOptions = [],
   onPreviewSizeChange = () => {},
+  templateType = "",
+  cardStyle = "standard",
+  onCardStyleChange = () => {},
 }) => {
+  // Business card style options
+  const cardStyleOptions = [
+    { id: "standard", name: "Standard" },
+    { id: "modern", name: "Modern" },
+    { id: "minimal", name: "Minimal" }
+  ];
+  
+  // Determine if we should show style options for business cards
+  const showStyleOptions = templateType === "business-card";
   // Icons for control buttons
   const downloadIcon = (
     <svg
@@ -83,16 +98,35 @@ const TemplateControls: React.FC<TemplateControlsProps> = ({
     </svg>
   );
 
-  // State for size dropdown
+  const styleIcon = (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+      className="w-6 h-6"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M9.53 16.122a3 3 0 0 0-5.78 1.128 2.25 2.25 0 0 1-2.4 2.245 4.5 4.5 0 0 0 8.4-2.245c0-.399-.078-.78-.22-1.128Zm0 0a15.998 15.998 0 0 0 3.388-1.62m-5.043-.025a15.994 15.994 0 0 1 1.622-3.395m3.42 3.42a15.995 15.995 0 0 0 4.764-4.648l3.876-5.814a1.151 1.151 0 0 0-1.597-1.597L14.146 6.32a15.996 15.996 0 0 0-4.649 4.763m3.42 3.42a6.776 6.776 0 0 0-3.42-3.42"
+      />
+    </svg>
+  );
+
+  // State for dropdowns
   const [showSizeDropdown, setShowSizeDropdown] = React.useState(false);
+  const [showStyleDropdown, setShowStyleDropdown] = React.useState(false);
   
-  // Ref for handling clicks outside of dropdown
-  const dropdownRef = React.useRef<HTMLDivElement | null>(null);
+  // Refs for handling clicks outside of dropdowns
+  const sizeDropdownRef = React.useRef<HTMLDivElement | null>(null);
+  const styleDropdownRef = React.useRef<HTMLDivElement | null>(null);
   
-  // Effect to add click outside handler
+  // Effect to add click outside handler for size dropdown
   React.useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (sizeDropdownRef.current && !sizeDropdownRef.current.contains(event.target as Node)) {
         setShowSizeDropdown(false);
       }
     }
@@ -108,6 +142,25 @@ const TemplateControls: React.FC<TemplateControlsProps> = ({
     };
   }, [showSizeDropdown]);
 
+  // Effect to add click outside handler for style dropdown
+  React.useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (styleDropdownRef.current && !styleDropdownRef.current.contains(event.target as Node)) {
+        setShowStyleDropdown(false);
+      }
+    }
+    
+    // Add event listener when dropdown is open
+    if (showStyleDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    
+    // Clean up event listener
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showStyleDropdown]);
+
   return (
     <div className="controls-wrapper fixed z-50 flex items-center h-full right-0">
       <div className="m-4 bg-white/90 backdrop-blur-md rounded-lg shadow-lg border border-latte-pink transition-all duration-300 ease-in-out flex flex-col p-3">
@@ -122,7 +175,10 @@ const TemplateControls: React.FC<TemplateControlsProps> = ({
           {showSizeOptions && (
             <li className="relative">
               <button
-                onClick={() => setShowSizeDropdown(!showSizeDropdown)}
+                onClick={() => {
+                  setShowSizeDropdown(!showSizeDropdown);
+                  setShowStyleDropdown(false);
+                }}
                 className="flex items-center justify-center w-10 h-10 rounded-full bg-white text-latte-text shadow-md hover:bg-blue-100/60 hover:text-blue-700 transition-colors duration-150 text-sm"
                 title="Change Size"
                 aria-label="Change Size"
@@ -132,7 +188,7 @@ const TemplateControls: React.FC<TemplateControlsProps> = ({
               
               {/* Size dropdown */}
               {showSizeDropdown && (
-                <div ref={dropdownRef} className="absolute top-0 right-12 bg-white shadow-lg rounded-lg p-2 min-w-40 z-50">
+                <div ref={sizeDropdownRef} className="absolute top-0 right-12 bg-white shadow-lg rounded-lg p-2 min-w-40 z-50">
                   <div className="text-sm font-medium mb-2 text-latte-text px-2">
                     Size Options:
                   </div>
@@ -146,6 +202,51 @@ const TemplateControls: React.FC<TemplateControlsProps> = ({
                           }}
                           className={`w-full text-left px-2 py-1.5 rounded text-sm ${
                             previewSize === option.id
+                              ? "bg-blue-100/60 text-blue-700 font-semibold"
+                              : "hover:bg-gray-100 text-gray-600"
+                          }`}
+                        >
+                          {option.name}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </li>
+          )}
+          
+          {/* Style selector button and dropdown for business cards */}
+          {showStyleOptions && (
+            <li className="relative">
+              <button
+                onClick={() => {
+                  setShowStyleDropdown(!showStyleDropdown);
+                  setShowSizeDropdown(false);
+                }}
+                className="flex items-center justify-center w-10 h-10 rounded-full bg-white text-latte-text shadow-md hover:bg-blue-100/60 hover:text-blue-700 transition-colors duration-150 text-sm"
+                title="Change Card Style"
+                aria-label="Change Card Style"
+              >
+                {styleIcon}
+              </button>
+              
+              {/* Style dropdown */}
+              {showStyleDropdown && (
+                <div ref={styleDropdownRef} className="absolute top-0 right-12 bg-white shadow-lg rounded-lg p-2 min-w-40 z-50">
+                  <div className="text-sm font-medium mb-2 text-latte-text px-2">
+                    Card Styles:
+                  </div>
+                  <ul className="space-y-1">
+                    {cardStyleOptions.map((option) => (
+                      <li key={option.id}>
+                        <button
+                          onClick={() => {
+                            onCardStyleChange(option.id);
+                            setShowStyleDropdown(false);
+                          }}
+                          className={`w-full text-left px-2 py-1.5 rounded text-sm ${
+                            cardStyle === option.id
                               ? "bg-blue-100/60 text-blue-700 font-semibold"
                               : "hover:bg-gray-100 text-gray-600"
                           }`}

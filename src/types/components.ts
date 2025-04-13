@@ -20,11 +20,13 @@ export interface TemplateComponentProps {
 export interface TemplateRendererProps extends TemplateComponentProps {
   template: TemplateDefinition;
   size?: string;
+  cardStyle?: "standard" | "modern" | "minimal";
 }
 
 // Business card props
 export interface BusinessCardProps extends TemplateComponentProps {
   values: BusinessCardValues;
+  cardStyle?: "standard" | "modern" | "minimal";
 }
 
 // Invoice props
