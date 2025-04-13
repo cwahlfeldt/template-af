@@ -1,6 +1,6 @@
 import { Template, IndustryType, TemplateType } from '../types/templates';
 import { businessCardTemplate } from '../components/templates/business-card';
-import { invoiceTemplate } from '../components/templates/invoice';
+import { invoiceTemplate } from '../components/templates/invoice/defaultData';
 import { socialPostTemplate } from '../components/templates/social-post';
 
 // Template data structure

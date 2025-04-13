@@ -1,49 +1,54 @@
-import React from 'react';
-import BusinessCard from './business-card';
-import Invoice from './invoice';
-import SocialPost from './social-post';
-import { TemplateRendererProps } from '../../types/components';
-import { BusinessCardValues, InvoiceValues, SocialPostValues, TemplateType } from '../../types/templates';
+import React from "react";
+import BusinessCard from "./business-card";
+import Invoice from "./invoice/Invoice";
+import SocialPost from "./social-post";
+import { TemplateRendererProps } from "../../types/components";
+import {
+  BusinessCardValues,
+  InvoiceValues,
+  SocialPostValues,
+  TemplateType,
+} from "../../types/templates";
 
 /**
  * Component that renders the appropriate template based on template type
- * 
+ *
  * @param props - Component props
  * @returns The selected template component
  */
-const TemplateRenderer: React.FC<TemplateRendererProps> = ({ 
-  template, 
-  values, 
-  onValueChange, 
-  isEditMode, 
-  size = 'default',
-  cardStyle = 'standard'
+const TemplateRenderer: React.FC<TemplateRendererProps> = ({
+  template,
+  values,
+  onValueChange,
+  isEditMode,
+  size = "default",
+  cardStyle = "standard",
 }) => {
   switch (template.type as TemplateType) {
-    case 'business-card':
+    case "business-card":
       return (
-        <BusinessCard 
-          values={values as BusinessCardValues} 
-          onValueChange={onValueChange} 
+        <BusinessCard
+          values={values as BusinessCardValues}
+          onValueChange={onValueChange}
           isEditMode={isEditMode}
           cardStyle={cardStyle}
         />
       );
 
-    case 'invoice':
+    case "invoice":
       return (
-        <Invoice 
-          values={values as InvoiceValues} 
-          onValueChange={onValueChange} 
-          isEditMode={isEditMode} 
+        <Invoice
+          values={values as InvoiceValues}
+          onValueChange={onValueChange}
+          isEditMode={isEditMode}
         />
       );
 
-    case 'social-post':
+    case "social-post":
       return (
-        <SocialPost 
-          values={values as SocialPostValues} 
-          onValueChange={onValueChange} 
+        <SocialPost
+          values={values as SocialPostValues}
+          onValueChange={onValueChange}
           isEditMode={isEditMode}
           size={size}
         />
@@ -52,7 +57,9 @@ const TemplateRenderer: React.FC<TemplateRendererProps> = ({
     default:
       return (
         <div className="bg-gray-100 p-6 rounded-lg flex items-center justify-center">
-          <p className="text-gray-500">Preview not available for this template type.</p>
+          <p className="text-gray-500">
+            Preview not available for this template type.
+          </p>
         </div>
       );
   }
