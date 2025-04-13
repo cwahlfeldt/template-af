@@ -1,7 +1,7 @@
 import React from 'react';
-import BusinessCard from './BusinessCard';
-import Invoice from './Invoice';
-import SocialPost from './SocialPost';
+import BusinessCard from './business-card';
+import Invoice from './invoice';
+import SocialPost from './social-post';
 import { TemplateRendererProps } from '../../types/components';
 import { BusinessCardValues, InvoiceValues, SocialPostValues, TemplateType } from '../../types/templates';
 
