@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { toPng } from "html-to-image";
 import useTemplateValues from "../hooks/useTemplateValues";
 import TemplateRenderer from "../components/templates/TemplateRenderer";
+import TemplateControls from "../components/navigation/TemplateControls";
 import { Template } from "../types/templates";
 import FlowBoard from "src/components/flowBoard/FlowBoard";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
@@ -98,105 +99,18 @@ const TemplateEditor: React.FC = () => {
           <p className="text-latte-overlay2">{template?.description}</p>
         </div>
       </div>
+      
+      {/* Template Controls */}
+      <TemplateControls 
+        onDownload={downloadTemplate} 
+        showSizeOptions={showSizeOptions}
+        previewSize={previewSize}
+        previewOptions={previewOptions}
+        onPreviewSizeChange={(size) => setPreviewSize(size)}
+      />
       <div className="justify-center gap-12 w-full">
-        {/* <div className="px-4 py-8 max-w-3/12">
-
-
-        <div className="mb-6 flex gap-4">
-          <button
-            onClick={downloadTemplate}
-            className="bg-blue-800 text-white px-6 py-2 rounded-md hover:bg-blue-900 transition-colors"
-          >
-            Download Template
-          </button>
-
-          {showSizeOptions && (
-            <div className="flex items-center space-x-2">
-              <label
-                htmlFor="preview-size"
-                className="text-sm font-medium text-gray-700 invisible absolute -top-full"
-              >
-                Preview Size:
-              </label>
-              <select
-                id="preview-size"
-                value={previewSize}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                  setPreviewSize(e.target.value)
-                }
-                className="border border-gray-300 rounded-md p-3 text-sm"
-              >
-                {previewOptions.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-        </div>
-
-        {activeTab === "edit" && (
-          <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
-            <h3 className="text-lg font-medium text-blue-700 mb-2">
-              Editing Tips
-            </h3>
-            <ul className="text-sm text-blue-700 space-y-2">
-              <li className="flex items-start">
-                <span className="mr-2">•</span>
-                <span>Click directly on text in the template to edit it</span>
-              </li>
-              <li className="flex items-start">
-                <span className="mr-2">•</span>
-                <span>Hover over images to change them</span>
-              </li>
-              {template?.template?.type === "social-post" && (
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>
-                    Click on the color circle to change background colors
-                  </span>
-                </li>
-              )}
-              {template?.template?.type === "invoice" && (
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>
-                    Use the "Add Item" button to add new invoice items
-                  </span>
-                </li>
-              )}
-            </ul>
-          </div>
-        )}
-      </div> */}
-
         <div className="p-6 flex w-screen relative justify-center items-center h-full min-h-screen">
           <div className="relative" ref={templateRef}>
-            {/* <div className="absolute -bottom-0 -right-12 z-20">
-            <button
-              onClick={downloadTemplate}
-              className="bg-blue-800 text-white cursor-pointer w-10 h-10 rounded-full flex items-center justify-center hover:bg-blue-900 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" // Added focus styles for accessibility
-              aria-label="Download Template" // Good for screen readers
-              title="Download Template" // Provides a tooltip on hover
-            >
-            
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 rotate-180" // Adjust icon size as needed
-                viewBox="0 0 20 20"
-                fill="currentColor" // Uses the text-white color from the button
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm6-14a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 6.414V13a1 1 0 11-2 0V6.414L6.707 8.414A1 1 0 015.293 7l4-4z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </button> */}
-            {/* </div> */}
-            {/* <TransformWrapper centerOnInit={true} smooth={true}>
-            <TransformComponent> */}
             <TemplateRenderer
               template={template!.template}
               values={values}
@@ -204,8 +118,6 @@ const TemplateEditor: React.FC = () => {
               isEditMode={activeTab === "edit"}
               size={previewSize}
             />
-            {/* </TransformComponent>
-          </TransformWrapper> */}
           </div>
         </div>
       </div>
