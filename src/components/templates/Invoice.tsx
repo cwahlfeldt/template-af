@@ -40,7 +40,7 @@ const Invoice: React.FC<InvoiceProps> = ({
   };
 
   return (
-    <div className="invoice bg-white p-6 rounded-lg shadow-md w-[800px] border border-gray-200">
+    <div className="invoice bg-white p-6 rounded-lg shadow-md w-[800px] border border-gray-200 scale-90">
       <div className="flex justify-between items-center mb-8">
         <div>
           <h2 className="text-2xl font-bold text-gray-800">

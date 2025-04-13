@@ -33,7 +33,7 @@ function Navbar() {
   const logoContainerClasses = `shrink-0 ${
     isVertical
       ? "py-3 px-3 border-b border-gray-200/80 mb-2 text-center"
-      : "px-2"
+      : "pl-3 pr-5"
   }`;
 
   const logoTextClasses = `font-bold tracking-wider group-hover:text-blue-600 transition-colors duration-200 ${

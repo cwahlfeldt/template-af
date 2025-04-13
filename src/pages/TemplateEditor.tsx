@@ -90,11 +90,13 @@ const TemplateEditor: React.FC = () => {
 
   return (
     <>
-      <div className="absolute top-4 left-4 mb-6 z-1 ">
-        <h1 className="text-latte-pink text-5xl font-stretch-ultra-condensed font-extrabold italic">
-          {template?.name}
-        </h1>
-        <p className="text-latte-overlay2">{template?.description}</p>
+      <div className="fixed flex flex-col justify-center items-center w-full top-4 left-0 mb-6 z-1 text-left">
+        <div className="text-left">
+          <h1 className="text-latte-pink text-5xl font-stretch-ultra-condensed font-extrabold italic">
+            {template?.name}
+          </h1>
+          <p className="text-latte-overlay2">{template?.description}</p>
+        </div>
       </div>
       <div className="justify-center gap-12 w-full">
         {/* <div className="px-4 py-8 max-w-3/12">
@@ -195,15 +197,13 @@ const TemplateEditor: React.FC = () => {
             {/* </div> */}
             {/* <TransformWrapper centerOnInit={true} smooth={true}>
             <TransformComponent> */}
-            <div className="ml-8 mt-8">
-              <TemplateRenderer
-                template={template!.template}
-                values={values}
-                onValueChange={updateValue}
-                isEditMode={activeTab === "edit"}
-                size={previewSize}
-              />
-            </div>
+            <TemplateRenderer
+              template={template!.template}
+              values={values}
+              onValueChange={updateValue}
+              isEditMode={activeTab === "edit"}
+              size={previewSize}
+            />
             {/* </TransformComponent>
           </TransformWrapper> */}
           </div>
