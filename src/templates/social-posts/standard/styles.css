@@ -1,0 +1,52 @@
+/* Social Post Styles */
+.social-post {
+  position: relative;
+  background-color: var(--brand-color, #ff5722);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.color-picker-button {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.color-picker-button:hover {
+  transform: scale(1.1);
+}
+
+/* Size variants */
+.size-instagram {
+  width: 600px;
+  height: 600px;
+}
+
+.size-instagram-story {
+  width: 500px;
+  height: 889px; 
+}
+
+.size-facebook {
+  width: 628px;
+  height: 418px;
+}
+
+.size-twitter {
+  width: 600px;
+  height: 335px;
+}
+
+.size-linkedin {
+  width: 600px;
+  height: 400px;
+}
+
+/* Print-specific styles */
+@media print {
+  .social-post {
+    box-shadow: none !important;
+    border: 1px solid #e2e2e2;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

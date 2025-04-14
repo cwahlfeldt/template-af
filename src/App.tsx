@@ -1,39 +1,39 @@
 // src/App.tsx
-import React from "react";
+import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Navbar from "./components/navigation/Navbar";
 import Home from "./pages/Home";
 import TemplateEditor from "./pages/TemplateEditor";
 import TemplateList from "./pages/TemplateList";
-import MainLayout from "./components/layouts/MainLayout"; // Import the new layout component
+import MainLayout from "./components/layouts/MainLayout";
+import { TemplateProvider } from "./templates/_core/TemplateProvider";
+import { initializeTemplates } from "./templates/_core";
 import "./App.css";
 
-const App: React.FC = () => {
-  return (
-    <Router>
-      {/* Set a background color or global styles on the root if needed */}
-      <div className="min-h-screen bg-latte-base">
-        {" "}
-        {/* Example background */}
-        {/* Navbar is rendered once, outside the main layout */}
-        {/* It remains fixed regardless of the content padding */}
-        <Navbar />
-        {/* Routes are defined using React Router v6 structure */}
-        <Routes>
-          {/* Define a Layout Route: Routes nested under this will use MainLayout */}
-          <Route element={<MainLayout />}>
-            {/* These routes will be rendered inside MainLayout's <Outlet /> */}
-            <Route path="/" element={<Home />} />
-            <Route path="/editor/:templateId" element={<TemplateEditor />} />
-            <Route path="/templates/:industry" element={<TemplateList />} />
-            {/* Add any other routes that should have the standard layout and padding here */}
-          </Route>
+// Initialize templates when the app loads
+initializeTemplates();
 
-          {/* You could have routes outside the MainLayout if they need a different structure */}
-          {/* e.g., <Route path="/login" element={<LoginPage />} /> */}
-        </Routes>
-      </div>
-    </Router>
+const App: React.FC = () => {
+  // Ensure templates are initialized
+  useEffect(() => {
+    initializeTemplates();
+  }, []);
+
+  return (
+    <TemplateProvider>
+      <Router>
+        <div className="min-h-screen bg-latte-base">
+          <Navbar />
+          <Routes>
+            <Route element={<MainLayout />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/editor/:templateId" element={<TemplateEditor />} />
+              <Route path="/templates/:industry" element={<TemplateList />} />
+            </Route>
+          </Routes>
+        </div>
+      </Router>
+    </TemplateProvider>
   );
 };
 

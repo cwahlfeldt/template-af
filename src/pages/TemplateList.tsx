@@ -1,23 +1,24 @@
 import { useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
-import { getTemplatesByIndustry } from "../data/templates";
-import { Template } from "../types/templates";
+import { useTemplates } from "../templates/_core/TemplateProvider";
+import { TemplateDefinition } from "../templates/_core/types";
 import React from "react";
 
 const TemplateList: React.FC = () => {
   const { industry } = useParams<{ industry?: string }>();
-  const [templates, setTemplates] = useState<Template[]>([]);
+  const [templates, setTemplates] = useState<TemplateDefinition[]>([]);
+  const { getTemplatesByIndustry, loading: contextLoading } = useTemplates();
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    // Simulate fetching templates
-    setLoading(true);
-    if (industry) {
-      const fetchedTemplates = getTemplatesByIndustry(industry);
-      setTemplates(fetchedTemplates);
+    // Get templates from the template system
+    if (!contextLoading && industry) {
+      setLoading(true);
+      const industryTemplates = getTemplatesByIndustry(industry as any);
+      setTemplates(industryTemplates);
+      setLoading(false);
     }
-    setLoading(false);
-  }, [industry]);
+  }, [industry, contextLoading, getTemplatesByIndustry]);
 
   // Safely handle undefined industry parameter
   const industryDisplayName = industry
@@ -48,7 +49,7 @@ const TemplateList: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {templates.map((template: Template) => (
+          {templates.map((template: TemplateDefinition) => (
             <Link
               key={template.id}
               to={`/editor/${template.id}`}
@@ -60,7 +61,7 @@ const TemplateList: React.FC = () => {
               <div className="p-4">
                 <h3 className="font-semibold">{template.name}</h3>
                 <p className="text-gray-600 text-sm">{template.description}</p>
-                <div className="mt-2 flex space-x-2">
+                <div className="mt-2 flex flex-wrap gap-2">
                   {template.tags.map((tag: string, index: number) => (
                     <span
                       key={index}

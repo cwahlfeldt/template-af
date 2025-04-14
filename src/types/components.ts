@@ -5,6 +5,8 @@ import {
   TemplateDefinition, 
   InvoiceItem, 
   BusinessCardValues,
+  DoubleSidedCardValues,
+  QRCodeCardValues,
   InvoiceValues,
   SocialPostValues
 } from './templates';
@@ -21,12 +23,33 @@ export interface TemplateRendererProps extends TemplateComponentProps {
   template: TemplateDefinition;
   size?: string;
   cardStyle?: "standard" | "modern" | "minimal";
+  showBackSide?: boolean;
 }
 
 // Business card props
 export interface BusinessCardProps extends TemplateComponentProps {
   values: BusinessCardValues;
   cardStyle?: "standard" | "modern" | "minimal";
+}
+
+// Standard card props
+export interface StandardCardProps extends TemplateComponentProps {
+  values: BusinessCardValues;
+  cardStyle?: "standard" | "modern" | "minimal";
+}
+
+// Double-sided card props
+export interface DoubleSidedCardProps extends TemplateComponentProps {
+  values: DoubleSidedCardValues;
+  showBackSide?: boolean;
+  onFlip?: () => void;
+}
+
+// QR code card props
+export interface QRCodeCardProps extends TemplateComponentProps {
+  values: QRCodeCardValues;
+  showBackSide?: boolean;
+  onFlip?: () => void;
 }
 
 // Invoice props

@@ -35,10 +35,13 @@ interface TemplateControlsProps {
   previewSize?: string;
   previewOptions?: PreviewOption[];
   onPreviewSizeChange?: (size: string) => void;
-  templateType?: string;
-  cardStyle?: string;
-  onCardStyleChange?: (style: string) => void;
-  // Future props will go here for additional controls
+  showVariantOptions?: boolean;
+  variant?: string;
+  variantOptions?: PreviewOption[];
+  onVariantChange?: (variant: string) => void;
+  showBackSide?: boolean;
+  onFlipCard?: () => void;
+  canFlip?: boolean;
 }
 
 /**
@@ -50,19 +53,14 @@ const TemplateControls: React.FC<TemplateControlsProps> = ({
   previewSize = "default",
   previewOptions = [],
   onPreviewSizeChange = () => {},
-  templateType = "",
-  cardStyle = "standard",
-  onCardStyleChange = () => {},
+  showVariantOptions = false,
+  variant = "standard",
+  variantOptions = [],
+  onVariantChange = () => {},
+  showBackSide = false,
+  onFlipCard = () => {},
+  canFlip = false
 }) => {
-  // Business card style options
-  const cardStyleOptions = [
-    { id: "standard", name: "Standard" },
-    { id: "modern", name: "Modern" },
-    { id: "minimal", name: "Minimal" }
-  ];
-  
-  // Determine if we should show style options for business cards
-  const showStyleOptions = templateType === "business-card";
   // Icons for control buttons
   const downloadIcon = (
     <svg
@@ -77,6 +75,23 @@ const TemplateControls: React.FC<TemplateControlsProps> = ({
         strokeLinecap="round"
         strokeLinejoin="round"
         d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
+      />
+    </svg>
+  );
+  
+  const flipCardIcon = (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+      className="w-6 h-6"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3"
       />
     </svg>
   );
@@ -216,8 +231,8 @@ const TemplateControls: React.FC<TemplateControlsProps> = ({
             </li>
           )}
           
-          {/* Style selector button and dropdown for business cards */}
-          {showStyleOptions && (
+          {/* Variant/Style selector button and dropdown */}
+          {showVariantOptions && (
             <li className="relative">
               <button
                 onClick={() => {
@@ -225,8 +240,8 @@ const TemplateControls: React.FC<TemplateControlsProps> = ({
                   setShowSizeDropdown(false);
                 }}
                 className="flex items-center justify-center w-10 h-10 rounded-full bg-white text-latte-text shadow-md hover:bg-blue-100/60 hover:text-blue-700 transition-colors duration-150 text-sm"
-                title="Change Card Style"
-                aria-label="Change Card Style"
+                title="Change Style"
+                aria-label="Change Style"
               >
                 {styleIcon}
               </button>
@@ -235,18 +250,18 @@ const TemplateControls: React.FC<TemplateControlsProps> = ({
               {showStyleDropdown && (
                 <div ref={styleDropdownRef} className="absolute top-0 right-12 bg-white shadow-lg rounded-lg p-2 min-w-40 z-50">
                   <div className="text-sm font-medium mb-2 text-latte-text px-2">
-                    Card Styles:
+                    Style Options:
                   </div>
                   <ul className="space-y-1">
-                    {cardStyleOptions.map((option) => (
+                    {variantOptions.map((option) => (
                       <li key={option.id}>
                         <button
                           onClick={() => {
-                            onCardStyleChange(option.id);
+                            onVariantChange(option.id);
                             setShowStyleDropdown(false);
                           }}
                           className={`w-full text-left px-2 py-1.5 rounded text-sm ${
-                            cardStyle === option.id
+                            variant === option.id
                               ? "bg-blue-100/60 text-blue-700 font-semibold"
                               : "hover:bg-gray-100 text-gray-600"
                           }`}
@@ -261,7 +276,14 @@ const TemplateControls: React.FC<TemplateControlsProps> = ({
             </li>
           )}
           
-          {/* Additional control buttons will be added here */}
+          {/* Flip card button */}
+          {canFlip && (
+            <ControlButton 
+              icon={flipCardIcon} 
+              label={showBackSide ? "Show Front" : "Show Back"} 
+              onClick={onFlipCard} 
+            />
+          )}
         </ul>
       </div>
     </div>

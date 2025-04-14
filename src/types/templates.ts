@@ -12,7 +12,10 @@ export type FieldType = 'text' | 'image' | 'color' | 'array' | 'calculated';
 
 // Define template types with string literals
 export type TemplateType = 
-  | 'business-card' 
+  | 'business-card'
+  | 'standard-card' 
+  | 'double-sided-card'
+  | 'qr-code-card'
   | 'invoice' 
   | 'social-post'
   | 'lesson-plan'
@@ -74,7 +77,7 @@ export interface SocialPostValues extends TemplateValues {
   logo?: string;
 }
 
-// More specific type for business card values
+// Base business card values
 export interface BusinessCardValues extends TemplateValues {
   name: string;
   title: string;
@@ -84,6 +87,25 @@ export interface BusinessCardValues extends TemplateValues {
   website: string;
   address: string;
   logo?: string;
+}
+
+// Double-sided business card values
+export interface DoubleSidedCardValues extends BusinessCardValues {
+  backContent?: string;
+  backLogo?: string;
+  tagline?: string;
+  showMapOnBack?: boolean;
+}
+
+// QR code business card values
+export interface QRCodeCardValues extends BusinessCardValues {
+  qrCodeData: string;
+  qrCodeLabel?: string;
+  backContent?: string;
+  showBackSide?: boolean;
+  linkedinProfile?: string;
+  twitterHandle?: string;
+  instagramHandle?: string;
 }
 
 // More specific type for invoice values

@@ -1,20 +1,19 @@
 import React from "react";
-import BusinessCard from "./business-card";
-import Invoice from "./invoice/Invoice";
-import SocialPost from "./social-post";
-import { TemplateRendererProps } from "../../types/components";
-import {
-  BusinessCardValues,
-  InvoiceValues,
-  SocialPostValues,
-  TemplateType,
-} from "../../types/templates";
+import { TemplateDefinition } from "../../templates/_core/types";
+
+interface TemplateRendererProps {
+  template: TemplateDefinition;
+  values: any;
+  onValueChange: (id: string, value: any) => void;
+  isEditMode: boolean;
+  size?: string;
+  variant?: string;
+  showBackSide?: boolean;
+}
 
 /**
- * Component that renders the appropriate template based on template type
- *
- * @param props - Component props
- * @returns The selected template component
+ * Component that renders the appropriate template based on template definition
+ * This is a thin wrapper that delegates rendering to the template's component
  */
 const TemplateRenderer: React.FC<TemplateRendererProps> = ({
   template,
@@ -22,47 +21,32 @@ const TemplateRenderer: React.FC<TemplateRendererProps> = ({
   onValueChange,
   isEditMode,
   size = "default",
-  cardStyle = "standard",
+  variant = "standard",
+  showBackSide = false,
 }) => {
-  switch (template.type as TemplateType) {
-    case "business-card":
-      return (
-        <BusinessCard
-          values={values as BusinessCardValues}
-          onValueChange={onValueChange}
-          isEditMode={isEditMode}
-          cardStyle={cardStyle}
-        />
-      );
-
-    case "invoice":
-      return (
-        <Invoice
-          values={values as InvoiceValues}
-          onValueChange={onValueChange}
-          isEditMode={isEditMode}
-        />
-      );
-
-    case "social-post":
-      return (
-        <SocialPost
-          values={values as SocialPostValues}
-          onValueChange={onValueChange}
-          isEditMode={isEditMode}
-          size={size}
-        />
-      );
-
-    default:
-      return (
-        <div className="bg-gray-100 p-6 rounded-lg flex items-center justify-center">
-          <p className="text-gray-500">
-            Preview not available for this template type.
-          </p>
-        </div>
-      );
+  if (!template || !template.component) {
+    return (
+      <div className="bg-gray-100 p-6 rounded-lg flex items-center justify-center">
+        <p className="text-gray-500">
+          Preview not available for this template.
+        </p>
+      </div>
+    );
   }
+
+  // Create an instance of the template's component
+  const TemplateComponent = template.component;
+  
+  return (
+    <TemplateComponent
+      values={values}
+      onValueChange={onValueChange}
+      isEditMode={isEditMode}
+      size={size}
+      variant={variant}
+      showBackSide={showBackSide}
+    />
+  );
 };
 
 export default TemplateRenderer;

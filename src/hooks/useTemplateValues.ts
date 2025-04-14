@@ -1,7 +1,14 @@
 import { useState, useEffect } from 'react';
-import { getTemplateById } from '../data/templates';
-import { Template, TemplateValues } from '../types/templates';
-import { UseTemplateValuesReturn } from '../types/hooks';
+import { useTemplates } from '../templates/_core/TemplateProvider';
+import { TemplateDefinition, TemplateValues } from '../templates/_core/types';
+
+interface UseTemplateValuesReturn {
+  template: TemplateDefinition | null;
+  values: TemplateValues;
+  updateValue: (id: string, value: any) => void;
+  loading: boolean;
+  error: string | null;
+}
 
 /**
  * Custom hook to manage template values and their updates
@@ -9,27 +16,32 @@ import { UseTemplateValuesReturn } from '../types/hooks';
  * @returns Template data, values, and update function
  */
 const useTemplateValues = (templateId: string): UseTemplateValuesReturn => {
-  const [template, setTemplate] = useState<Template | null>(null);
+  const { getTemplateById } = useTemplates();
+  const [template, setTemplate] = useState<TemplateDefinition | null>(null);
   const [values, setValues] = useState<TemplateValues>({});
   const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // Fetch the template
     const fetchedTemplate = getTemplateById(templateId);
     
     if (fetchedTemplate) {
-      setTemplate(fetchedTemplate as Template);
+      setTemplate(fetchedTemplate);
       
       // Initialize form values with defaults
       const initialValues: TemplateValues = {};
-      fetchedTemplate.template.fields.forEach(field => {
+      fetchedTemplate.fields.forEach(field => {
         initialValues[field.id] = field.default;
       });
       
       setValues(initialValues);
       setLoading(false);
+    } else {
+      setError(`Template with ID "${templateId}" not found`);
+      setLoading(false);
     }
-  }, [templateId]);
+  }, [templateId, getTemplateById]);
 
   /**
    * Update a template value by field ID
@@ -66,7 +78,8 @@ const useTemplateValues = (templateId: string): UseTemplateValuesReturn => {
     template,
     values,
     updateValue,
-    loading
+    loading,
+    error
   };
 };
 
