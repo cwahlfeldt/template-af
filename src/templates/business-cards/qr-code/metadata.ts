@@ -8,6 +8,22 @@ export const metadata = {
   industry: 'business' as IndustryType,
   tags: ['card', 'professional', 'contact', 'qr-code', 'digital'],
   icon: '📱',
+  // Standard business card dimensions: 3.5" x 2"
+  printConfig: {
+    formats: ['pdf', 'png'] as Array<'pdf' | 'png'>,
+    dimensions: {
+      width: 3.5,
+      height: 2,
+      unit: 'in' as 'in' | 'mm' | 'pt'
+    },
+    orientation: 'landscape' as 'portrait' | 'landscape',
+    margins: {
+      top: 0.125,
+      right: 0.125,
+      bottom: 0.125,
+      left: 0.125
+    }
+  },
   hasBackSide: true
 };
 

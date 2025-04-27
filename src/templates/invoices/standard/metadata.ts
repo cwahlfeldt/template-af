@@ -7,7 +7,22 @@ export const metadata = {
   description: 'Clean and professional invoice layout',
   industry: 'business' as IndustryType,
   tags: ['finance', 'billing', 'professional', 'invoice'],
-  icon: '📝'
+  icon: '📝',
+  printConfig: {
+    formats: ['pdf', 'png'] as Array<'pdf' | 'png'>,
+    dimensions: {
+      width: 210,
+      height: 297,
+      unit: 'mm' as 'in' | 'mm' | 'pt'
+    },
+    orientation: 'portrait' as 'portrait' | 'landscape',
+    margins: {
+      top: 10,
+      right: 10,
+      bottom: 10,
+      left: 10
+    }
+  }
 };
 
 // Template fields schema

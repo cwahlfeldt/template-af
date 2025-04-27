@@ -1,5 +1,5 @@
 import React from "react";
-import { TemplateDefinition } from "../../templates/_core/types";
+import { TemplateDefinition } from "../templates/_core/types";
 
 interface TemplateRendererProps {
   template: TemplateDefinition;

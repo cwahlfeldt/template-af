@@ -35,6 +35,30 @@ export interface PreviewSize {
   className?: string;
 }
 
+// Print configuration
+export interface PrintConfig {
+  // Allowed export formats
+  formats: Array<'pdf' | 'png'>;
+  
+  // Paper dimensions (when exporting to PDF)
+  dimensions?: {
+    width: number;
+    height: number;
+    unit: 'mm' | 'in' | 'pt';
+  };
+  
+  // Orientation (when exporting to PDF)
+  orientation?: 'portrait' | 'landscape';
+  
+  // Margins (when exporting to PDF)
+  margins?: {
+    top: number;
+    right: number;
+    bottom: number;
+    left: number;
+  };
+}
+
 // Template component props
 export interface TemplateComponentProps {
   values: TemplateValues;
@@ -71,6 +95,9 @@ export interface TemplateDefinition {
   
   // Preview settings
   previewSizes?: PreviewSize[];
+  
+  // Print settings
+  printConfig?: PrintConfig;
   
   // Does this template have front/back sides?
   hasBackSide?: boolean;

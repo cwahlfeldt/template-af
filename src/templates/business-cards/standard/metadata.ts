@@ -8,18 +8,20 @@ export const metadata = {
   industry: 'business' as IndustryType,
   tags: ['card', 'professional', 'contact', 'single-sided'],
   icon: '🪪',
-  variants: {
-    standard: {
-      name: 'Standard',
-      description: 'Classic and professional design',
+  // Standard business card dimensions: 3.5" x 2"
+  printConfig: {
+    formats: ['pdf', 'png'] as Array<'pdf' | 'png'>,
+    dimensions: {
+      width: 3.5,
+      height: 2,
+      unit: 'in' as 'in' | 'mm' | 'pt'
     },
-    modern: {
-      name: 'Modern',
-      description: 'Contemporary design with gradient background',
-    },
-    minimal: {
-      name: 'Minimal',
-      description: 'Clean, minimalist design with accent border',
+    orientation: 'landscape' as 'portrait' | 'landscape',
+    margins: {
+      top: 0.125,
+      right: 0.125,
+      bottom: 0.125,
+      left: 0.125
     }
   },
   hasBackSide: false

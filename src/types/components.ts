@@ -1,67 +1,10 @@
+/**
+ * @deprecated - This file is deprecated and exists only for backwards compatibility.
+ * Import types directly from src/templates/_core/types.ts instead.
+ */
+
 import { ReactNode } from 'react';
-import { 
-  Template, 
-  TemplateValues, 
-  TemplateDefinition, 
-  InvoiceItem, 
-  BusinessCardValues,
-  DoubleSidedCardValues,
-  QRCodeCardValues,
-  InvoiceValues,
-  SocialPostValues
-} from './templates';
-
-// Generic props interface for template components
-export interface TemplateComponentProps {
-  values: TemplateValues;
-  onValueChange: (id: string, value: any) => void;
-  isEditMode: boolean;
-}
-
-// Template renderer props
-export interface TemplateRendererProps extends TemplateComponentProps {
-  template: TemplateDefinition;
-  size?: string;
-  cardStyle?: "standard" | "modern" | "minimal";
-  showBackSide?: boolean;
-}
-
-// Business card props
-export interface BusinessCardProps extends TemplateComponentProps {
-  values: BusinessCardValues;
-  cardStyle?: "standard" | "modern" | "minimal";
-}
-
-// Standard card props
-export interface StandardCardProps extends TemplateComponentProps {
-  values: BusinessCardValues;
-  cardStyle?: "standard" | "modern" | "minimal";
-}
-
-// Double-sided card props
-export interface DoubleSidedCardProps extends TemplateComponentProps {
-  values: DoubleSidedCardValues;
-  showBackSide?: boolean;
-  onFlip?: () => void;
-}
-
-// QR code card props
-export interface QRCodeCardProps extends TemplateComponentProps {
-  values: QRCodeCardValues;
-  showBackSide?: boolean;
-  onFlip?: () => void;
-}
-
-// Invoice props
-export interface InvoiceProps extends TemplateComponentProps {
-  values: InvoiceValues;
-}
-
-// Social post props
-export interface SocialPostProps extends TemplateComponentProps {
-  values: SocialPostValues;
-  size?: string;
-}
+import { TemplateValues } from '../templates/_core/types';
 
 // Editable text component props
 export interface EditableTextProps {
@@ -95,31 +38,7 @@ export interface TemplateListProps {
   industry?: string;
 }
 
-// Invoice item props
-export interface InvoiceItemProps {
-  item: InvoiceItem;
-  index: number;
-  onUpdate: (index: number, field: string, value: any) => void;
-  onRemove: (index: number) => void;
-}
-
-// Size variants for social post
-export interface SizeVariant {
-  width: number;
-  height: number;
-  className: string;
-}
-
-export interface SizeVariants {
-  [key: string]: SizeVariant;
-  instagram: SizeVariant;
-  instagramStory: SizeVariant;
-  facebook: SizeVariant;
-  twitter: SizeVariant;
-  linkedin: SizeVariant;
-}
-
-// Preview option interface
+// Preview option interface - Moved to _core/types.ts
 export interface PreviewOption {
   id: string;
   name: string;

@@ -1,8 +1,10 @@
 import React, { useRef, useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toPng } from "html-to-image";
+import html2canvas from "html2canvas-pro";
+import jsPDF from "jspdf";
 import useTemplateValues from "../hooks/useTemplateValues";
-import TemplateRenderer from "../components/templates/TemplateRenderer";
+import TemplateRenderer from "../components/TemplateRenderer";
 import TemplateControls from "../components/navigation/TemplateControls";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 
@@ -36,34 +38,121 @@ const TemplateEditor: React.FC = () => {
     return null;
   }
 
+  // No helper function needed
+
   /**
    * Download the template as a PNG image
    */
-  const downloadTemplate = (): void => {
-    if (templateRef.current) {
-      // Temporarily hide edit UI elements
-      const prevMode = activeTab;
-      setActiveTab("preview");
+  const downloadTemplateAsPng = async (): Promise<void> => {
+    if (!templateRef.current) return;
 
-      // Use setTimeout to ensure the UI updates before capturing
-      setTimeout(() => {
-        // Use non-null assertion since we've already checked templateRef.current is not null
-        toPng(templateRef.current!)
-          .then((dataUrl) => {
-            const link = document.createElement("a");
-            link.download = `${template?.id}-template.png`;
-            link.href = dataUrl;
-            link.click();
-          })
-          .catch((error) => {
-            console.error("Error generating image:", error);
-          });
-      }, 100);
+    try {
+      // Create a clone of the template element to work with
+      const element = templateRef.current;
+
+      // Don't change the active tab - keep the editing UI visible
+      // This ensures text remains visible in the browser
+
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+      });
+
+      const dataUrl = canvas.toDataURL("image/png");
+      const link = document.createElement("a");
+      link.download = `${template?.id}-template.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (error) {
+      console.error("Error generating image:", error);
+    }
+  };
+
+  /**
+   * Download the template as a PDF document
+   */
+  const downloadTemplateAsPdf = async (): Promise<void> => {
+    if (!templateRef.current || !template?.printConfig) return;
+
+    // Get print configuration
+    const printConfig = template.printConfig;
+
+    // Skip if PDF format is not supported
+    if (!printConfig.formats.includes("pdf")) {
+      console.error("PDF format is not supported for this template");
+      return;
+    }
+
+    // Use default A4 dimensions if not specified
+    const dimensions = printConfig.dimensions || {
+      width: 210,
+      height: 297,
+      unit: "mm",
+    };
+
+    // Get orientation
+    const orientation = printConfig.orientation || "portrait";
+
+    try {
+      // Create a clone of the template element to work with
+      const element = templateRef.current;
+
+      // Don't change the active tab - keep the editing UI visible
+      // This ensures text remains visible in the browser
+
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+      });
+
+      // Calculate dimensions based on configuration
+      const { width, height, unit } = dimensions;
+
+      // Create PDF document with the specified dimensions
+      const pdf = new jsPDF(orientation as any, unit as any, [width, height]);
+
+      // Calculate image dimensions to fit in the PDF
+      let imgWidth = width;
+      let imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      // Apply margins if specified
+      let xPosition = 0;
+      let yPosition = 0;
+
+      if (printConfig.margins) {
+        const { left, top } = printConfig.margins;
+        xPosition = left;
+        yPosition = top;
+        imgWidth = width - (left + printConfig.margins.right);
+        imgHeight = (canvas.height * imgWidth) / canvas.width;
+      }
+
+      const imgData = canvas.toDataURL("image/jpeg", 0.98);
+
+      // Add the image to the PDF
+      pdf.addImage(imgData, "JPEG", xPosition, yPosition, imgWidth, imgHeight);
+
+      // Save the PDF
+      pdf.save(`${template.id}-template.pdf`);
+    } catch (error) {
+      console.error("Error generating PDF:", error);
     }
   };
 
   // Determine if we should show size options based on template's previewSizes
-  const showSizeOptions = template?.previewSizes && template.previewSizes.length > 0;
+  const showSizeOptions =
+    template?.previewSizes && template.previewSizes.length > 0;
+
+  // Determine which export formats are available
+  const supportedFormats = template?.printConfig?.formats || ["png"];
+  const supportsPdf = supportedFormats.includes("pdf");
+  const supportsPng = supportedFormats.includes("png");
 
   // Get preview options based on template's previewSizes
   const getPreviewOptions = () => {
@@ -78,7 +167,7 @@ const TemplateEditor: React.FC = () => {
     if (template?.variants) {
       return Object.entries(template.variants).map(([id, data]) => ({
         id,
-        name: data.name
+        name: data.name,
       }));
     }
     return [{ id: "standard", name: "Standard" }];
@@ -97,23 +186,26 @@ const TemplateEditor: React.FC = () => {
 
   return (
     <>
-      <div className="fixed flex flex-col justify-center items-center w-full top-4 left-0 mb-6 z-1 text-left">
-        <div className="text-left">
+      <div className="fixed flex flex-col justify-center items-center w-full top-4 left-0 mb-6 z-1">
+        <div className="text-center max-w-md">
           <h1 className="text-latte-pink text-5xl font-stretch-ultra-condensed font-extrabold italic">
             {template?.name}
           </h1>
-          <p className="text-latte-overlay2">{template?.description}</p>
+          <p className="text-latte-overlay2 mt-1">{template?.description}</p>
         </div>
       </div>
-      
+
       {/* Template Controls */}
-      <TemplateControls 
-        onDownload={downloadTemplate} 
+      <TemplateControls
+        onDownload={supportsPng ? downloadTemplateAsPng : undefined}
+        onDownloadPdf={supportsPdf ? downloadTemplateAsPdf : undefined}
         showSizeOptions={showSizeOptions}
         previewSize={previewSize}
         previewOptions={previewOptions}
         onPreviewSizeChange={(size) => setPreviewSize(size)}
-        showVariantOptions={!!template?.variants && Object.keys(template.variants).length > 0}
+        showVariantOptions={
+          !!template?.variants && Object.keys(template.variants).length > 0
+        }
         variant={variant}
         variantOptions={variantOptions}
         onVariantChange={(newVariant) => setVariant(newVariant)}
@@ -123,7 +215,7 @@ const TemplateEditor: React.FC = () => {
       />
       <div className="justify-center gap-12 w-full">
         <div className="p-6 flex w-screen relative justify-center items-center h-full min-h-screen">
-          <div className="relative" ref={templateRef} style={{ minHeight: '250px' }}>
+          <div className="relative" ref={templateRef}>
             <TemplateRenderer
               template={template!}
               values={values}

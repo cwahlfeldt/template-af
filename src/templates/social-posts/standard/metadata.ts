@@ -15,7 +15,11 @@ export const metadata = {
     { id: 'facebook', name: 'Facebook' },
     { id: 'twitter', name: 'Twitter' },
     { id: 'linkedin', name: 'LinkedIn' }
-  ] as PreviewSize[]
+  ] as PreviewSize[],
+  // Print configuration - social media posts only support PNG export
+  printConfig: {
+    formats: ['png'] as Array<'pdf' | 'png'>
+  }
 };
 
 // Template fields schema
