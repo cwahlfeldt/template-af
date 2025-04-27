@@ -7,7 +7,6 @@
   max-width: 800px;
   max-height: 600px;
   background-color: #f8f5ff;
-  border-radius: 8px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   padding: 40px;
@@ -19,7 +18,7 @@
 .coloring-sheet-title-container {
   margin-bottom: 30px;
   text-align: center;
-  z-index: 10;
+  z-index: 20; /* Make sure title stays on top */
 }
 
 .coloring-sheet-title {
@@ -42,23 +41,19 @@
 .coloring-sheet-images-container {
   flex: 1;
   position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  overflow: visible; /* Allow sheets to overflow */
 }
 
 /* Base image styling */
 .coloring-sheet-image {
   position: absolute;
-  width: calc(50vw * 0.35); /* Control width based on viewport */
-  max-width: 280px;
+  width: calc(50vw * 0.25); /* Control width based on viewport */
+  max-width: 200px;
   /* Exact 8.5×11 aspect ratio */
   aspect-ratio: 8.5 / 11;
   background-color: white;
-  box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
-
-/* Removed hover effects and animations */
 
 .coloring-image {
   width: 100%;
@@ -67,33 +62,89 @@
   /* Ensure image fills the entire div with exact 8.5:11 ratio */
 }
 
-/* Individual image positioning - fixed, non-animated placement with responsive positioning */
+/* Individual image positioning with random rotations and overlaps */
 .image-1 {
-  transform: rotate(5deg);
-  bottom: 5%;
-  right: 10%;
-  z-index: 4;
+  transform: rotate(8deg);
+  top: -10%;
+  left: 5%;
+  z-index: 11;
 }
 
 .image-2 {
-  transform: rotate(-8deg);
-  bottom: 8%;
-  left: 10%;
-  z-index: 3;
+  transform: rotate(-15deg);
+  top: 20%;
+  left: -8%;
+  z-index: 12;
 }
 
 .image-3 {
-  transform: rotate(12deg);
-  top: 10%;
-  right: 12%;
-  z-index: 2;
+  transform: rotate(22deg);
+  bottom: -15%;
+  left: 20%;
+  z-index: 13;
 }
 
 .image-4 {
-  transform: rotate(-10deg);
-  top: 12%;
-  left: 12%;
-  z-index: 1;
+  transform: rotate(-5deg);
+  bottom: 10%;
+  right: -5%;
+  z-index: 14;
+}
+
+.image-5 {
+  transform: rotate(12deg);
+  top: 5%;
+  right: -10%;
+  z-index: 15;
+}
+
+.image-6 {
+  transform: rotate(-18deg);
+  top: -15%;
+  left: 35%;
+  z-index: 9;
+}
+
+.image-7 {
+  transform: rotate(3deg);
+  bottom: -5%;
+  right: 30%;
+  z-index: 10;
+}
+
+.image-8 {
+  transform: rotate(-9deg);
+  top: 15%;
+  right: 15%;
+  z-index: 8;
+}
+
+.image-9 {
+  transform: rotate(17deg);
+  bottom: 25%;
+  left: 10%;
+  z-index: 7;
+}
+
+.image-10 {
+  transform: rotate(-25deg);
+  top: 20%;
+  left: 25%;
+  z-index: 6;
+}
+
+.image-11 {
+  transform: rotate(20deg);
+  bottom: 15%;
+  left: 40%;
+  z-index: 5;
+}
+
+.image-12 {
+  transform: rotate(-12deg);
+  top: 40%;
+  right: -15%;
+  z-index: 4;
 }
 
 /* Print-specific styles */
