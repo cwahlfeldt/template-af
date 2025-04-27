@@ -4,6 +4,7 @@ import doubleSidedBusinessCardTemplate from '../business-cards/double-sided';
 import qrCodeBusinessCardTemplate from '../business-cards/qr-code';
 import socialPostTemplate from '../social-posts/standard';
 import invoiceTemplate from '../invoices/standard';
+import etsyDisplayColoringSheetTemplate from '../coloring-sheets/etsy-display';
 
 /**
  * Initialize the template registry with all available templates
@@ -26,6 +27,9 @@ export function initializeTemplates(): void {
     
     // Invoices
     invoiceTemplate,
+    
+    // Coloring sheets
+    etsyDisplayColoringSheetTemplate,
     
     // Add more templates here as they are developed
   ]);
