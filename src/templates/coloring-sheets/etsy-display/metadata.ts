@@ -8,12 +8,12 @@ export const metadata = {
   industry: 'marketing' as IndustryType,
   tags: ['coloring', 'etsy', 'display', 'art', 'printable', 'letter-size'],
   icon: '🖼️',
-  // 4:3 ratio for overall container
+  // Responsive dimensions - approximately 50% of viewport
   printConfig: {
     formats: ['png'] as Array<'pdf' | 'png'>,
     dimensions: {
-      width: 1200,
-      height: 900,
+      width: 800,
+      height: 600,
       unit: 'px' as 'in' | 'mm' | 'pt' | 'px'
     },
     orientation: 'landscape' as 'portrait' | 'landscape',
