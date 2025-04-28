@@ -1,6 +1,6 @@
-import html2canvas from 'html2canvas';
+import html2canvas from 'html2canvas-pro';
 // If using TypeScript and have @types/html2canvas installed:
-import type { Options } from 'html2canvas';
+import type { Options } from 'html2canvas-pro';
 
 // Interface definition as above...
 interface ExportElementAsImageOptions {
@@ -13,7 +13,7 @@ interface ExportElementAsImageOptions {
 }
 
 const DEFAULT_H2C_OPTIONS: Partial<Options> = {
-  scale: 6, // Consider if this high scale is always needed, affects performance/size
+  scale: 2, // Consider if this high scale is always needed, affects performance/size
   useCORS: true,
   allowTaint: true,
   backgroundColor: null,
@@ -26,8 +26,8 @@ const DEFAULT_H2C_OPTIONS: Partial<Options> = {
 
 const DEFAULT_FILENAME = 'download';
 const DEFAULT_RENDER_DELAY = 50;
-const DEFAULT_QUALITY = 0.5;
-const DEFAULT_FORMAT = 'image/jpeg'; // Default to PNG
+const DEFAULT_QUALITY = 1;
+const DEFAULT_FORMAT = 'image/png'; // Default to PNG
 
 const delay = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
 

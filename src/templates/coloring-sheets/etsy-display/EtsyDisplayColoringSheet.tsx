@@ -73,18 +73,17 @@ const EtsyDisplayColoringSheet: React.FC<TemplateComponentProps> = ({
         {/* Image display area with scattered layout */}
         <div className="coloring-sheet-images-container">
           {images.map((image, index) => (
-                        <div className={`coloring-sheet-image image-${index}`}>
-                        <editable-image>
-                          <img
-                            id={`image${index + 1}`}
-                            src={image}
-                            alt="Coloring sheet 1"
-                            className="coloring-image"
-                          />
-                        </editable-image>
-                      </div>
+            <div className={`coloring-sheet-image image-${index}`}>
+              <editable-image>
+                <img
+                  id={`image${index + 1}`}
+                  src={image}
+                  alt="Coloring sheet 1"
+                  className="coloring-image"
+                />
+              </editable-image>
+            </div>
           ))}
-        
         </div>
       </div>
     </>
