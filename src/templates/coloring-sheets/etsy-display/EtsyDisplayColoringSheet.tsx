@@ -50,31 +50,31 @@ const EtsyDisplayColoringSheet: React.FC<TemplateComponentProps> = ({
     image12,
   ].filter((img) => img);
 
-  console.log(printConfig);
-
   return (
     <>
       {/* Main container */}
-      <div className="coloring-sheet-display-container bg-white">
+      <div className="coloring-sheet-display-container">
         {/* Title section */}
-        <div className="coloring-sheet-title-container">
-          <div>
-            <editable-text id="coloring-sheet-title" persist>
-              <h1 className="coloring-sheet-title">{title}</h1>
-            </editable-text>
+        <color-changer id="change-colorid" persist>
+          <div className="coloring-sheet-title-container">
+            <div>
+              <editable-text id="coloring-sheet-title" persist toolbar>
+                <h1 className="coloring-sheet-title">{title}</h1>
+              </editable-text>
+            </div>
+            <div>
+              <editable-text id="coloring-sheet-subtitle" persist>
+                <h2 className="coloring-sheet-subtitle">{subtitle}</h2>
+              </editable-text>
+            </div>
           </div>
-          <div>
-            <editable-text id="coloring-sheet-subtitle" persist>
-              <h2 className="coloring-sheet-subtitle">{subtitle}</h2>
-            </editable-text>
-          </div>
-        </div>
+        </color-changer>
 
         {/* Image display area with scattered layout */}
         <div className="coloring-sheet-images-container">
           {images.map((image, index) => (
-            <div className={`coloring-sheet-image image-${index}`}>
-              <editable-image>
+            <div key={index} className={`coloring-sheet-image image-${index}`}>
+              <editable-image persist>
                 <img
                   id={`image${index + 1}`}
                   src={image}

@@ -1,10 +1,6 @@
-/* Etsy display coloring sheet styles */
-
 .coloring-sheet-display-container {
   position: relative;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-  padding: 1.5rem;
   display: flex;
   flex-direction: column;
   width: 800px;
@@ -13,29 +9,30 @@
 
 /* Title section */
 .coloring-sheet-title-container {
-  margin-bottom: 30px;
   text-align: center;
+  padding: 1.5rem;
   z-index: 20; /* Make sure title stays on top */
 }
 
 .coloring-sheet-title {
   font-size: 2.5rem;
   font-weight: 800;
-  color: #333;
+  color: var(--color-changer-contrast-change-colorid);
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .coloring-sheet-subtitle {
   font-size: 1.5rem;
   font-weight: 500;
-  color: #666;
+  color: var(--color-changer-contrast-change-colorid);
 }
 
 /* Images container */
 .coloring-sheet-images-container {
   flex: 1;
   position: relative;
-  overflow: visible; /* Allow sheets to overflow */
+  overflow: hidden;
+
 }
 
 /* Base image styling */
@@ -93,7 +90,7 @@
 
 .image-6 {
   transform: rotate(-18deg);
-  top: 1rem;
+  top: 1.7rem;
   left: 15rem;
   z-index: 13;
 }
