@@ -53,3 +53,15 @@ body {
   justify-content: center;
   align-items: center;
 }
+
+:focus-visible {
+  outline: none;
+}
+
+/* Print-specific styles */
+@media print {
+  .print {
+    transform: scale(1) !important;
+    scale: 1 !important;
+  }
+}

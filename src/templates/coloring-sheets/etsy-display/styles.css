@@ -2,15 +2,13 @@
 
 .coloring-sheet-display-container {
   position: relative;
-  width: 800px;
-  height: 600px;
-  transform: scale(0.8);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
-  aspect-ratio: 4 /3;
+  width: 800px;
+  height: 600px;
 }
 
 /* Title section */
@@ -21,10 +19,9 @@
 }
 
 .coloring-sheet-title {
-  font-size: 3rem;
+  font-size: 2.5rem;
   font-weight: 800;
   color: #333;
-  margin-bottom: 0.4rem;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
 }
 
@@ -45,7 +42,6 @@
 .coloring-sheet-image {
   position: absolute;
   width: 200px; /* Control width based on viewport */
-  max-width: 200px;
   /* Exact 8.5×11 aspect ratio */
   aspect-ratio: 8.5 / 11;
   background-color: white;

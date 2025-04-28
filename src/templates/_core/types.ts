@@ -39,6 +39,8 @@ export interface PreviewSize {
 export interface PrintConfig {
   // Allowed export formats
   formats: Array<'pdf' | 'png'>;
+  aspectRatio: string;
+  initialScale: number;
   
   // Paper dimensions (when exporting to PDF)
   dimensions?: {
@@ -67,6 +69,7 @@ export interface TemplateComponentProps {
   variant?: string;
   size?: string;
   showBackSide?: boolean;
+  printConfig?: PrintConfig;
 }
 
 // Template definition

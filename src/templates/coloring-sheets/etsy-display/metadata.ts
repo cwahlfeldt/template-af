@@ -10,13 +10,14 @@ export const metadata = {
   icon: '🖼️',
   // Responsive dimensions - approximately 50% of viewport
   printConfig: {
-    formats: ['png'] as Array<'pdf' | 'png'>,
+    formats: ['png'],
+    initialScale: 0.5,
     dimensions: {
       width: 2000,
-      height: 1800,
-      unit: 'px' as 'in' | 'mm' | 'pt' | 'px'
+      height: 1500,
+      unit: 'px'
     },
-    orientation: 'landscape' as 'portrait' | 'landscape',
+    orientation: 'landscape',
     margins: {
       top: 0,
       right: 0,

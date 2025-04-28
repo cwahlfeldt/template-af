@@ -30,7 +30,7 @@ interface PreviewOption {
 }
 
 interface TemplateControlsProps {
-  onDownload: (() => void) | undefined;
+  onDownload: any | undefined;
   onDownloadPdf: (() => void) | undefined;
   showSizeOptions?: boolean;
   previewSize?: string;

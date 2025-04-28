@@ -1,133 +1,135 @@
 /**
- * EditableText Web Component
+ * EditableText Web Component (Enhancer Version)
  *
- * A custom element that provides an inline editable text field with optional
- * localStorage persistence based on the element's 'id'.
+ * Enhances the first slotted HTML element, making it directly editable
+ * inline. Manages state, persistence, and events for the slotted element.
  *
  * @element editable-text
  *
- * @attr {string} value - The current text value of the element.
- * @attr {string} placeholder - Placeholder text shown when the value is empty.
- * @attr {number} maxlength - Maximum number of characters allowed.
- * @attr {boolean} readonly - If true, the text cannot be edited.
- * @attr {boolean} disabled - If true, the element is disabled and cannot be interacted with.
- * @attr {boolean} highlight - If true, applies a highlight background style.
- * @attr {number} tabindex - Sets the tab index for accessibility. Defaults are handled based on readonly/disabled state.
- * @attr {boolean} persist - If true, the component will attempt to load its initial value from
- * localStorage based on its 'id' and save subsequent changes back to
- * localStorage. Requires the element to have a unique 'id'.
+ * @attr {string} value - The text value. If set initially, overrides slotted content.
+ * Updates based on edits to the slotted element.
+ * @attr {string} placeholder - Placeholder text shown *on the slotted element* when its content is empty.
+ * Requires global CSS to style `[data-placeholder]::before`.
+ * @attr {number} maxlength - Maximum number of characters allowed in the slotted element.
+ * @attr {boolean} readonly - If true, the slotted element's text cannot be edited.
+ * @attr {boolean} disabled - If true, the component and slotted element are disabled.
+ * @attr {boolean} highlight - If true, applies a highlight background style *to the host*.
+ * @attr {number} tabindex - Sets the tab index *on the host* for accessibility.
+ * @attr {boolean} persist - If true, saves/loads the value to/from localStorage based on the host's 'id'.
  *
- * @prop {string} value - Gets or sets the current text value. Will interact with localStorage if 'persist' is true.
+ * @prop {string} value - Gets or sets the current text value. Syncs with the slotted element's textContent.
  * @prop {string} placeholder - Gets or sets the placeholder text.
  * @prop {number | null} maxLength - Gets or sets the maximum character length.
  * @prop {boolean} readOnly - Gets or sets the readonly state.
  * @prop {boolean} disabled - Gets or sets the disabled state.
  * @prop {boolean} persist - Gets or sets the persistence state.
  * @prop {boolean} highlight - Gets or sets the highlight state.
+ * @prop {HTMLElement | null} editableElement - Gets the actual slotted element being edited.
  *
- * @fires input - Fired synchronously when the value is changed by user input. Detail: { value: string }
+ * @fires input - Fired synchronously when the slotted element's value is changed by user input. Detail: { value: string }
  * @fires change - Fired when the value is committed (on blur or Enter) after being changed. Detail: { value: string }
- * @fires char-count - Fired whenever the value changes (programmatically or via user input). Detail: { value: string, length: number, maxLength: number | null }
+ * @fires char-count - Fired whenever the value changes. Detail: { value: string, length: number, maxLength: number | null }
  * @fires max-length - Fired when user input attempts to exceed the maxlength. Detail: { value: string, length: number, maxLength: number }
+ * @fires slotted-element-missing - Fired if no suitable element is found in the slot during initialization.
  *
- * @cssprop --editable-hover-border-color - Border color on hover (default: #ccc).
- * @cssprop --editable-focus-border-color - Border color on focus (default: #4dabf7).
- * @cssprop --editable-hover-background-color - Background color on hover (default: rgba(240, 249, 255, 0.5)).
- * @cssprop --editable-focus-background-color - Background color on focus (default: rgba(240, 249, 255, 0.7)).
- * @cssprop --editable-highlight-color - Background color when `highlight` attribute is present (default: rgba(255, 255, 0, 0.2)).
- * @cssprop --editable-placeholder-color - Color of the placeholder text (default: #999).
- * @cssprop --editable-disabled-opacity - Opacity when disabled (default: 0.6).
+ * @cssprop --editable-hover-border-color - Host border color on hover (default: #ccc).
+ * @cssprop --editable-focus-border-color - Host border color on focus (default: #4dabf7).
+ * @cssprop --editable-hover-background-color - Host background color on hover (default: rgba(240, 249, 255, 0.6)).
+ * @cssprop --editable-focus-background-color - Host background color on focus (default: rgba(231, 245, 255, 0.8)).
+ * @cssprop --editable-highlight-color - Host background color when `highlight` attribute is present (default: rgba(255, 255, 0, 0.2)).
+ * @cssprop --editable-placeholder-color - *Used by required global CSS* for placeholder text color (default: #999).
+ * @cssprop --editable-disabled-opacity - Host opacity when disabled (default: 0.6).
+ *
+ * @slot - Default slot. Expects a single HTML element (e.g., h1, p, div).
+ * The component will make this element editable. Text nodes are ignored
+ * for determining the editable element.
+ *
+ * @example Required Global CSS for Placeholder:
+ * ```css
+ * [data-editable-placeholder]:empty::before {
+ * content: attr(data-editable-placeholder);
+ * color: var(--editable-placeholder-color, #999);
+ * font-style: italic;
+ * pointer-events: none;
+ * display: inline;
+ * user-select: none;
+ * opacity: 0.8;
+ * }
+ * ```
  */
 class EditableText extends HTMLElement {
   // --- Private Class Fields ---
-  #internals; // ElementInternals for potential future form association
-  #editableSpan = null; // Reference to the internal span element
-  #currentValue = ""; // Internal tracking of the value
-  #initialValueOnFocus = null; // Value when the element received focus
-  #isProgrammaticChange = false; // Flag to prevent event loops between setter and attributeChangedCallback
-  #isInitialized = false; // Flag to track if component setup is complete
+  #internals;
+  #slottedElement = null; // Reference to the actual editable element in the light DOM
+  #currentValue = "";
+  #initialValueOnFocus = null;
+  #isProgrammaticChange = false;
+  #isInitialized = false;
+  #mutationObserver = null; // To detect if slotted element is removed
+
+  // Bound event listeners
+  _boundHandleFocus = null;
+  _boundHandleBlur = null;
+  _boundHandleSlottedInput = null;
+  _boundHandleSlottedKeydown = null;
+  _boundHandleMutation = null;
+
 
   static get observedAttributes() {
-    // Attributes to monitor for changes
     return [
-      "value",
-      "placeholder",
-      "maxlength",
-      "readonly",
-      "disabled",
-      "highlight",
-      "tabindex",
-      "persist", // Observe the new persist attribute
-      "id", // Observe id changes as it affects the storage key
+      "value", "placeholder", "maxlength", "readonly", "disabled",
+      "highlight", "tabindex", "persist", "id"
     ];
   }
 
   constructor() {
     super();
-    // Attach Shadow DOM
     this.attachShadow({ mode: "open" });
-    // Initialize ElementInternals (useful for form participation if needed later)
-    this.#internals = this.attachInternals?.(); // Use attachInternals if available
-
-    // Read initial value from attribute/content early for potential use before connection
-    // This might be overridden by localStorage in connectedCallback
-    this.#currentValue =
-      this.getAttribute("value") ?? this.textContent?.trim() ?? "";
-
-    // Note: Event handlers are bound in #attachEventListeners using .bind()
+    this.#internals = this.attachInternals?.();
+    this.#setupShadowDOM(); // Setup styles early
   }
 
-  // --- Getters and Setters for Public Properties ---
+  // --- Public Property Getters/Setters ---
 
   get value() {
     return this.#currentValue;
   }
 
   set value(newValue) {
-    // Coerce to string and handle null/undefined
     const stringValue = String(newValue ?? "");
-    const maxLength = this.maxLength; // Use the public getter
+    const maxLength = this.maxLength;
     let finalValue = stringValue;
 
-    // Enforce maxLength if set
     if (maxLength !== null && stringValue.length > maxLength) {
       finalValue = stringValue.substring(0, maxLength);
-      // Note: We could dispatch max-length event here too if needed for programmatic sets
     }
 
-    // Only update if the value has actually changed
     if (this.#currentValue !== finalValue) {
-      const oldValue = this.#currentValue; // Store old value before update
       this.#currentValue = finalValue;
 
-      // Reflect property change to attribute for consistency
-      // Avoid triggering attributeChangedCallback loop by setting flag
+      // Reflect property change to attribute
       this.#isProgrammaticChange = true;
-      this.setAttribute("value", finalValue);
+      if (this.getAttribute('value') !== finalValue) {
+        this.setAttribute("value", finalValue);
+      }
       this.#isProgrammaticChange = false;
 
-      // Persist to localStorage if enabled AFTER internal value is set
-      this.#saveToLocalStorage(); // Use private helper
-
-      // Update rendering if the element is already set up
-      if (this.#editableSpan) {
-        this.#render(); // Use private helper
+      // Update the actual slotted element's content ONLY if initialized and element exists
+      if (this.#isInitialized && this.#slottedElement && this.#slottedElement.textContent !== finalValue) {
+          this.#slottedElement.textContent = finalValue;
       }
 
-      // Dispatch events if connected to the DOM
+      this.#saveToLocalStorage();
+      this.#render(); // Update placeholder state
+
       if (this.isConnected) {
-        this.#dispatchCharCountEvent(); // Use private helper
-        // Note: Programmatic changes typically don't fire 'input' or 'change'
-        // 'change' fires on blur/commit, 'input' is for direct user interaction
+        this.#dispatchCharCountEvent();
       }
     }
-    // --- FIX ---
-    // Ensure render is called even if the value hasn't changed during initialization
-    // This is important if the initial value comes from textContent and matches #currentValue
-    else if (!this.#isInitialized && this.#editableSpan) {
-      this.#render();
+    // Ensure render happens during init even if value doesn't change
+    else if (!this.#isInitialized) {
+       this.#render();
     }
-    // --- END FIX ---
   }
 
   get placeholder() {
@@ -141,15 +143,13 @@ class EditableText extends HTMLElement {
     } else {
       this.removeAttribute("placeholder");
     }
-    // Re-render if needed to update visual placeholder
-    if (this.#isInitialized) this.#render();
+    if (this.#isInitialized) this.#render(); // Update placeholder attribute on slotted element
   }
 
   get maxLength() {
     const attr = this.getAttribute("maxlength");
     if (attr === null) return null;
     const num = parseInt(attr, 10);
-    // Return the number if it's a non-negative integer, otherwise null
     return !isNaN(num) && num >= 0 ? num : null;
   }
 
@@ -161,15 +161,12 @@ class EditableText extends HTMLElement {
       if (!isNaN(num) && num >= 0) {
         this.setAttribute("maxlength", String(num));
       } else {
-        // Remove attribute if value is invalid
         this.removeAttribute("maxlength");
       }
     }
-    // Re-validate current value after setting maxLength
+    // Re-validate current value
     if (this.#isInitialized) {
-      const currentVal = this.value; // Get current value
-      // Set it again via setter for potential truncation and event dispatch
-      this.value = currentVal;
+      this.value = this.#currentValue; // Use setter to potentially truncate
     }
   }
 
@@ -178,9 +175,7 @@ class EditableText extends HTMLElement {
   }
 
   set readOnly(value) {
-    const shouldBeReadOnly = Boolean(value);
-    this.toggleAttribute("readonly", shouldBeReadOnly);
-    // Update state if component is initialized
+    this.toggleAttribute("readonly", Boolean(value));
     if (this.#isInitialized) this.#updateEditableState();
   }
 
@@ -189,9 +184,7 @@ class EditableText extends HTMLElement {
   }
 
   set disabled(value) {
-    const shouldBeDisabled = Boolean(value);
-    this.toggleAttribute("disabled", shouldBeDisabled);
-    // Update state if component is initialized
+    this.toggleAttribute("disabled", Boolean(value));
     if (this.#isInitialized) this.#updateEditableState();
   }
 
@@ -201,7 +194,6 @@ class EditableText extends HTMLElement {
 
   set highlight(value) {
     this.toggleAttribute("highlight", Boolean(value));
-    // CSS handles rendering based on the attribute presence
   }
 
   get persist() {
@@ -211,98 +203,108 @@ class EditableText extends HTMLElement {
   set persist(value) {
     const shouldPersist = Boolean(value);
     this.toggleAttribute("persist", shouldPersist);
-    // If persistence is newly enabled after initialization, save the current value
-    if (shouldPersist && this.#isInitialized) {
-      this.#saveToLocalStorage();
-    }
-    // If persistence is disabled, we might want to clear the stored value (optional)
-    else if (!shouldPersist && this.#isInitialized) {
-      this.#clearFromLocalStorage();
-    }
+    if (shouldPersist && this.#isInitialized) this.#saveToLocalStorage();
+    else if (!shouldPersist && this.#isInitialized) this.#clearFromLocalStorage();
+  }
+
+  /**
+   * Gets the actual slotted element being edited.
+   * @returns {HTMLElement | null}
+   */
+  get editableElement() {
+      return this.#slottedElement;
   }
 
   // --- Lifecycle Callbacks ---
 
   connectedCallback() {
-    // Prevent re-initialization if already connected and initialized
-    if (this.#isInitialized) {
-      return;
-    }
+    if (this.#isInitialized) return;
 
-    this.#setupShadowDOM(); // Use private helper
-    this.#attachEventListeners(); // Use private helper
+    // --- Find the Slotted Element ---
+    // We look for the first direct child element *after* the initial connection phase.
+    // Using setTimeout ensures children are likely parsed and available.
+    // A MutationObserver is more robust but adds complexity. Let's try setTimeout first.
+    // Update: Using requestAnimationFrame is slightly better than setTimeout(0)
+    requestAnimationFrame(() => {
+        this.#slottedElement = this.firstElementChild; // Find first direct element child
 
-    let initialValueToSet = this.#currentValue; // Start with constructor value (attribute/textContent)
-
-    // --- Persistence Read ---
-    if (this.persist) {
-      // Check if the persist attribute is present
-      const storageKey = this.#getStorageKey(); // Use private helper
-      if (storageKey) {
-        // Check if we got a valid key (requires ID)
-        try {
-          const storedValue = localStorage.getItem(storageKey);
-          if (storedValue !== null) {
-            // Value from localStorage overrides constructor/attribute value
-            initialValueToSet = storedValue;
-            console.info(
-              `EditableText (${this.id}): Loaded value from localStorage.`
-            );
-          }
-        } catch (e) {
-          console.warn(
-            `EditableText (${this.id}): Failed to read from localStorage for key "${storageKey}".`,
-            e
-          );
+        if (!this.#slottedElement) {
+            console.error("EditableText: No suitable element found in the default slot.", this);
+            this.dispatchEvent(new CustomEvent('slotted-element-missing', { bubbles: true, composed: true }));
+            // Optionally create a default span? Or just fail gracefully? Let's fail for now.
+            // this.#slottedElement = document.createElement('span');
+            // this.appendChild(this.#slottedElement);
+            return; // Stop initialization if no element
         }
-      } else {
-        console.warn(
-          `EditableText: 'persist' attribute is present, but the element lacks an 'id'. Persistence disabled.`
-        );
-      }
-    }
-    // --- End Persistence Read ---
 
-    // Use the setter to finalize the initial value. This handles:
-    // - Setting #currentValue
-    // - Applying maxLength validation
-    // - Setting the 'value' attribute
-    // - Triggering the initial render via the setter's call to #render() (if value changes or fix is applied)
-    // - Triggering the initial save to localStorage if persist is enabled
-    // - Triggering the initial char-count event dispatch
-    this.value = initialValueToSet;
+        // --- Determine Initial Value ---
+        // Priority: value attribute > slotted content > localStorage > empty string
+        let initialValueSource = this.getAttribute("value"); // 1. Attribute
+        let sourceName = "attribute";
 
-    // Ensure light DOM is clear *after* potential initial value reading and setting
-    this.textContent = "";
+        if (initialValueSource === null) {
+            initialValueSource = this.#slottedElement.textContent?.trim() ?? ""; // 2. Slotted Content
+            sourceName = "slot";
+        }
 
-    // Set initial editable state (contentEditable, ARIA, tabindex)
-    this.#updateEditableState(); // Use private helper
+        let initialValueToSet = initialValueSource;
 
-    // Initial render and char count dispatch are handled by the `this.value = ...` call above.
-    // The fix in the setter ensures render is called even if the value didn't change from constructor.
+        // --- Persistence Read ---
+        if (this.persist) {
+            const storageKey = this.#getStorageKey();
+            if (storageKey) {
+                try {
+                    const storedValue = localStorage.getItem(storageKey);
+                    if (storedValue !== null) {
+                        initialValueToSet = storedValue; // 3. LocalStorage overrides others
+                        sourceName = "localStorage";
+                    }
+                } catch (e) {
+                    console.warn(`EditableText (${this.id || 'no-id'}): Failed to read localStorage.`, e);
+                }
+            } else if (this.hasAttribute('persist')) {
+                console.warn(`EditableText: 'persist' attribute requires an 'id'.`);
+            }
+        }
 
-    this.#isInitialized = true; // Mark initialization complete
+        console.debug(`EditableText (${this.id || 'no-id'}): Initial value ("${initialValueToSet}") from ${sourceName}.`);
+
+        // --- Initialize State ---
+        // Use the setter to establish the initial value. It handles:
+        // - Setting #currentValue
+        // - Setting the 'value' attribute (if needed)
+        // - Updating slotted element's textContent (if needed)
+        // - Persistence save (if needed)
+        // - Initial render() call (placeholder)
+        // - Initial char-count event
+        this.value = initialValueToSet;
+
+        this.#attachEventListeners();
+        this.#updateEditableState(); // Set initial contenteditable, ARIA, etc.
+        this.#observeMutations(); // Watch if slotted element is removed
+
+        this.#isInitialized = true;
+    });
   }
 
   disconnectedCallback() {
-    // Cleanup when element is removed from the DOM
-    this.#removeEventListeners(); // Use private helper
-    // Note: We don't clear localStorage on disconnect by default.
+    this.#removeEventListeners();
+    this.#mutationObserver?.disconnect();
     // Resetting #isInitialized allows re-initialization if re-connected.
+    // Keep #slottedElement reference in case it's reconnected quickly? Or clear it? Let's clear it.
+    // this.#slottedElement = null; // Uncomment if needed
     // this.#isInitialized = false; // Uncomment if full re-init on re-connect is desired
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
-    // Don't run attribute logic until component is initialized in connectedCallback
-    // Also ignore if the value hasn't actually changed
     if (!this.#isInitialized || oldValue === newValue) return;
 
     switch (name) {
       case "value":
-        // Update internal value via the setter ONLY if the change didn't originate
-        // from the setter itself (checked by #isProgrammaticChange flag).
+        // Update internal value via setter ONLY if change didn't originate from setter
         if (!this.#isProgrammaticChange) {
-          this.value = newValue ?? ""; // Use setter to sync property and trigger side effects
+          // This handles cases where the attribute is changed externally (e.g., via devtools or JS)
+          this.value = newValue ?? ""; // Use setter to sync property, slotted content, etc.
         }
         break;
       case "readonly":
@@ -312,11 +314,10 @@ class EditableText extends HTMLElement {
         this.disabled = this.hasAttribute("disabled"); // Sync property via setter
         break;
       case "tabindex":
-        // No dedicated setter, just update the state directly
-        this.#updateEditableState(); // Re-evaluate tabindex logic
+        this.#updateEditableState(); // Re-evaluate host tabindex
         break;
       case "placeholder":
-        this.placeholder = newValue; // Sync property via setter
+        this.placeholder = newValue; // Sync property via setter (updates render)
         break;
       case "highlight":
         this.highlight = this.hasAttribute("highlight"); // Sync property via setter
@@ -328,16 +329,8 @@ class EditableText extends HTMLElement {
         this.persist = this.hasAttribute("persist"); // Sync property via setter
         break;
       case "id":
-        // If the ID changes while persisting, the storage key changes.
-        // We should save the current value associated with the *old* ID
-        // before potentially loading/saving with the new ID.
-        // However, simpler is just to warn and let the next save use the new key.
         if (this.persist && oldValue !== null && oldValue !== newValue) {
-          console.warn(
-            `EditableText: The 'id' attribute changed from "${oldValue}" to "${newValue}" while 'persist' is enabled. The localStorage key will change. Value associated with the old key "${this.#getStorageKey(
-              oldValue
-            )}" might be orphaned.`
-          );
+          console.warn(`EditableText: 'id' changed. localStorage key will change.`);
           // Re-save immediately using the new ID/key
           this.#saveToLocalStorage();
         }
@@ -347,495 +340,400 @@ class EditableText extends HTMLElement {
 
   // --- Private Helper Methods ---
 
-  /**
-   * Gets the localStorage key for this instance.
-   * Requires the element to have an ID.
-   * @param {string | null} [idOverride] - Optional ID to use instead of this.id (for attributeChangedCallback)
-   * @returns {string | null} The storage key or null if no valid ID.
-   */
   #getStorageKey(idOverride = null) {
     const id = idOverride ?? this.id;
-    if (!id) {
-      // Avoid console spam by only warning if persist is explicitly set
-      // if (this.hasAttribute('persist')) {
-      //     console.warn("EditableText: Persistence requires the element to have an 'id'.", this);
-      // }
-      return null;
-    }
-    // Using a prefix to avoid potential collisions with other localStorage items
+    if (!id) return null;
     return `editable-text-persist-${id}`;
   }
 
-  /**
-   * Saves the current value to localStorage if persistence is enabled and possible.
-   */
   #saveToLocalStorage() {
-    // Only save if initialized, persist is enabled, and has an ID
-    if (!this.#isInitialized || !this.persist) {
-      return;
-    }
-
+    if (!this.#isInitialized || !this.persist) return;
     const storageKey = this.#getStorageKey();
     if (storageKey) {
       try {
         localStorage.setItem(storageKey, this.#currentValue);
-        // console.debug(`EditableText (${this.id}): Saved value to localStorage.`); // Optional debug log
       } catch (e) {
-        console.warn(
-          `EditableText (${this.id}): Failed to write to localStorage for key "${storageKey}". (Quota possibly exceeded)`,
-          e
-        );
+        console.warn(`EditableText (${this.id || 'no-id'}): Failed to write localStorage.`, e);
       }
     }
-    // No warning if storageKey is null, as #getStorageKey handles the ID check/warning logic
   }
 
-  /**
-   * Optional: Clears the value from localStorage for this instance.
-   */
   #clearFromLocalStorage() {
-    if (!this.#isInitialized) return; // Don't clear if not set up
-
+    if (!this.#isInitialized) return;
     const storageKey = this.#getStorageKey();
     if (storageKey) {
       try {
         localStorage.removeItem(storageKey);
-        console.info(
-          `EditableText (${this.id}): Removed value from localStorage.`
-        );
       } catch (e) {
-        console.warn(
-          `EditableText (${this.id}): Failed to remove item from localStorage for key "${storageKey}".`,
-          e
-        );
+        console.warn(`EditableText (${this.id || 'no-id'}): Failed to remove localStorage item.`, e);
       }
     }
   }
 
-  /**
-   * Sets up the initial Shadow DOM structure and styles.
-   */
+  /** Sets up the Shadow DOM with only styles for the host */
   #setupShadowDOM() {
-    // (No changes needed in styles or structure for persistence)
     this.shadowRoot.innerHTML = /*html*/ `
       <style>
         :host {
-          display: inline-block;
+          display: inline-block; /* Or block, depending on desired layout */
           vertical-align: baseline;
           position: relative;
-          border-radius: 2px;
-          border-bottom: 1px solid transparent;
-          vertical-align: 0;
-          outline: none;
-          width: max-content;
-          line-height: inherit;
-          cursor: text;
-          white-space: normal;
-          box-shadow: inset 0 -1px 0 transparent; /* Default state */
-          transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* Adjust transition */
-          
-          /* CSS Variables for customization */
+          border-radius: 1px;
+          outline: none; /* Focus managed visually */
+          line-height: inherit; /* Inherit line height from context */
+          cursor: text; /* Default cursor */
+          padding: 1px 2px; /* Minimal padding around slotted content */
+          box-shadow: inset 0 -1px 0 transparent;
+          transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+
+          /* CSS Variables */
           --editable-hover-border-color: #ccc;
-          --editable-focus-border-color: #4dabf7; /* A slightly brighter blue */
+          --editable-focus-border-color: #4dabf7;
           --editable-hover-background-color: #f0f9ff; /* Lighter blue background on hover */
           --editable-focus-background-color: #e7f5ff; /* Slightly darker blue on focus */
           --editable-highlight-color: rgba(255, 255, 0, 0.2);
-          --editable-placeholder-color: #999;
+          /* --editable-placeholder-color is used by global CSS */
           --editable-disabled-opacity: 0.6;
         }
-        #editable {
-          display: inline;
-          outline: none;
-          word-wrap: break-word;
-          white-space: inherit; /* Inherit from host */
-        }
-        #editable:empty::before {
-          content: attr(data-placeholder);
-          color: var(--editable-placeholder-color);
-          font-style: italic;
-          pointer-events: none;
-          display: inline;
-          user-select: none;
-          opacity: 0.8;
-          position: relative;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-        :host([highlight]) { /* Apply highlight background to host */
+
+        /* Apply styles directly to the host based on state */
+        :host([highlight]) {
           background-color: var(--editable-highlight-color);
+          box-shadow: inset 0 -1px 0 transparent;
         }
         :host(:not([disabled]):not([readonly]):hover) {
-          border-bottom-color: var(--editable-hover-border-color);
+          box-shadow: inset 0 -1px 0 var(--editable-hover-border-color);
           background-color: var(--editable-hover-background-color);
         }
+        /* Use :focus-within since focus is on the slotted element */
         :host(:not([disabled]):not([readonly]):focus-within) {
-          box-shadow: inset 0 -1px 0 var(--editable-focus-border-color), 0 0 0 2px rgba(77, 171, 247, 0.2); /* Combine inset shadow and focus ring */
+          box-shadow: inset 0 -1.5px 0 var(--editable-focus-border-color), 0 0 0 2px rgba(77, 171, 247, 0.2);
           background-color: var(--editable-focus-background-color);
         }
         :host([readonly]) {
           cursor: default;
           background-color: transparent !important;
-          border-bottom-color: transparent !important;
-          user-select: text;
+          box-shadow: inset 0 -1px 0 transparent !important;
+          user-select: text; /* Allow selection */
         }
-        :host([readonly]) #editable {
-             user-select: text;
-         }
         :host([disabled]) {
           opacity: var(--editable-disabled-opacity);
           cursor: not-allowed;
           user-select: none;
           background-color: transparent !important;
-          border-bottom-color: transparent !important;
+          box-shadow: inset 0 -1px 0 transparent !important;
         }
-         :host([disabled]) #editable {
-             user-select: none;
-         }
+
+        /* Hide the ::slotted content visually if needed, though generally not required */
+        /* ::slotted(*) { } */
 
       </style>
-      <span id="editable" role="textbox" aria-multiline="false"></span>
-    `;
-    this.#editableSpan = this.shadowRoot.getElementById("editable");
+      <slot></slot> `;
+    // No internal #editableSpan anymore
   }
 
-  /**
-   * Attaches event listeners. Uses .bind() to ensure correct 'this' context.
-   */
+  /** Attaches event listeners to host and slotted element */
   #attachEventListeners() {
-    // Store bound listeners to ensure correct removal
-    this._boundHandleFocus = this.#handleFocus.bind(this);
-    this._boundHandleBlur = this.#handleBlur.bind(this);
-    this._boundHandleInput = this.#handleInput.bind(this);
-    this._boundHandleKeydown = this.#handleKeydown.bind(this);
+      if (!this.#slottedElement || this._boundHandleFocus) return; // Don't attach if no element or already attached
 
-    this.addEventListener("focus", this._boundHandleFocus);
-    this.addEventListener("blur", this._boundHandleBlur);
-    this.#editableSpan?.addEventListener("input", this._boundHandleInput);
-    this.#editableSpan?.addEventListener("keydown", this._boundHandleKeydown);
+      // Store bound listeners
+      this._boundHandleFocus = this.#handleFocus.bind(this);
+      this._boundHandleBlur = this.#handleBlur.bind(this);
+      this._boundHandleSlottedInput = this.#handleSlottedInput.bind(this);
+      this._boundHandleSlottedKeydown = this.#handleSlottedKeydown.bind(this);
+
+      // Listen on the HOST element for focus/blur delegation
+      this.addEventListener('focus', this._boundHandleFocus);
+      this.addEventListener('blur', this._boundHandleBlur);
+
+      // Listen on the SLOTTED element for input/keydown
+      this.#slottedElement.addEventListener('input', this._boundHandleSlottedInput);
+      this.#slottedElement.addEventListener('keydown', this._boundHandleSlottedKeydown);
   }
 
-  /**
-   * Removes event listeners using the stored bound references.
-   */
+  /** Removes event listeners */
   #removeEventListeners() {
-    this.removeEventListener("focus", this._boundHandleFocus);
-    this.removeEventListener("blur", this._boundHandleBlur);
-    this.#editableSpan?.removeEventListener("input", this._boundHandleInput);
-    this.#editableSpan?.removeEventListener(
-      "keydown",
-      this._boundHandleKeydown
-    );
+      // Remove from host
+      this.removeEventListener('focus', this._boundHandleFocus);
+      this.removeEventListener('blur', this._boundHandleBlur);
+
+      // Remove from slotted element (if it exists)
+      this.#slottedElement?.removeEventListener('input', this._boundHandleSlottedInput);
+      this.#slottedElement?.removeEventListener('keydown', this._boundHandleSlottedKeydown);
+
+      // Clear stored bounds
+      this._boundHandleFocus = null;
+      this._boundHandleBlur = null;
+      this._boundHandleSlottedInput = null;
+      this._boundHandleSlottedKeydown = null;
   }
 
-  /**
-   * Updates the component's rendering based on the current state.
-   */
+  /** Watch for removal of the slotted element */
+  #observeMutations() {
+      if (!this.#slottedElement) return;
+      this._boundHandleMutation = this.#handleMutation.bind(this);
+      this.#mutationObserver = new MutationObserver(this._boundHandleMutation);
+      // Observe the host element for changes in its direct children
+      this.#mutationObserver.observe(this, { childList: true });
+  }
+
+  /** Handle mutations, specifically removal of the slotted element */
+  #handleMutation(mutationsList) {
+      for (const mutation of mutationsList) {
+          if (mutation.type === 'childList' && mutation.removedNodes.length > 0) {
+              // Check if our tracked slotted element was among those removed
+              let elementRemoved = false;
+              mutation.removedNodes.forEach(removedNode => {
+                  if (removedNode === this.#slottedElement) {
+                      elementRemoved = true;
+                  }
+              });
+
+              if (elementRemoved) {
+                  console.warn("EditableText: Slotted element was removed.", this);
+                  this.#removeEventListeners(); // Clean up listeners associated with it
+                  this.#slottedElement = null; // Clear reference
+                  this.#mutationObserver?.disconnect(); // Stop observing
+                  // Maybe dispatch an event? Or try to find a new element?
+                  // For now, the component becomes inactive.
+                  break; // Exit loop once found
+              }
+          }
+      }
+  }
+
+  /** Updates placeholder attribute on the slotted element */
   #render() {
-    // (No changes needed in rendering logic for persistence)
-    if (!this.#editableSpan) return;
+    if (!this.#slottedElement) return;
 
-    // Update the text content only if it differs
-    if (this.#editableSpan.textContent !== this.#currentValue) {
-      this.#editableSpan.textContent = this.#currentValue;
-    }
-
-    // Update the placeholder data attribute for the ::before pseudo-element
-    const placeholderText = this.placeholder; // Reads from <editable-text placeholder="...">
+    const placeholderText = this.placeholder;
     if (placeholderText && this.#currentValue === "") {
-      this.#editableSpan.setAttribute("data-placeholder", placeholderText); // Sets attribute ON THE SPAN
+      // Add attribute for global CSS to target ::before
+      this.#slottedElement.setAttribute("data-editable-placeholder", placeholderText);
     } else {
-      this.#editableSpan.removeAttribute("data-placeholder");
+      this.#slottedElement.removeAttribute("data-editable-placeholder");
     }
   }
 
-  /**
-   * Updates contentEditable, ARIA attributes, and tabindex based on disabled/readonly state.
-   */
+  /** Updates contenteditable on slotted element, ARIA/tabindex on host */
   #updateEditableState() {
-    // (No changes needed in state update logic for persistence)
-    if (!this.#editableSpan) return;
-
     const isDisabled = this.disabled;
     const isReadOnly = this.readOnly;
     const explicitTabIndex = this.getAttribute("tabindex");
 
-    let targetTabIndex = "0"; // Default focusable
+    // --- Host Element State ---
+    let targetTabIndex = "0"; // Host is generally focusable unless disabled
     if (isDisabled) {
-      targetTabIndex = "-1"; // Not focusable
-    } else if (isReadOnly) {
-      targetTabIndex = explicitTabIndex ?? "0"; // Focusable unless explicitly removed
-    } else {
-      targetTabIndex = explicitTabIndex ?? "0"; // Editable is focusable
+      targetTabIndex = "-1";
+    } else if (explicitTabIndex !== null) {
+      targetTabIndex = explicitTabIndex; // Respect explicit tabindex
     }
-
     if (this.getAttribute("tabindex") !== targetTabIndex) {
-      this.setAttribute("tabindex", targetTabIndex);
+        this.setAttribute("tabindex", targetTabIndex);
     }
-
-    const canEdit = !isDisabled && !isReadOnly;
-    // Use 'plaintext-only' to prevent accidental HTML pasting, common for single-line inputs
-    this.#editableSpan.setAttribute(
-      "contenteditable",
-      canEdit ? "plaintext-only" : "false"
-    );
-
     this.toggleAttribute("aria-disabled", isDisabled);
     this.toggleAttribute("aria-readonly", isReadOnly && !isDisabled);
 
-    this.#editableSpan.setAttribute(
-      "aria-disabled",
-      isDisabled ? "true" : "false"
-    );
-    this.#editableSpan.setAttribute(
-      "aria-readonly",
-      isReadOnly && !isDisabled ? "true" : "false"
-    );
+    // --- Slotted Element State ---
+    if (this.#slottedElement) {
+        const canEdit = !isDisabled && !isReadOnly;
+        // Set contenteditable directly on the slotted element
+        this.#slottedElement.setAttribute("contenteditable", canEdit ? "plaintext-only" : "false");
 
-    // Update cursor via CSS for better separation of concerns
-    this.style.cursor = isDisabled
-      ? "not-allowed"
-      : isReadOnly
-      ? "default"
-      : "text";
+        // Optionally, mirror ARIA states if needed, though host state is primary
+        // this.#slottedElement.setAttribute("aria-disabled", isDisabled ? "true" : "false");
+        // this.#slottedElement.setAttribute("aria-readonly", isReadOnly && !isDisabled ? "true" : "false");
+
+        // Ensure slotted element isn't focusable itself if host handles focus
+        // If host has tabindex >= 0, slotted element should have -1 to avoid double stops.
+        // If host has tabindex -1 (disabled), slotted should also be non-focusable.
+        this.#slottedElement.setAttribute("tabindex", "-1");
+    }
+
+    // Host cursor style is handled by CSS :host rules
   }
 
-  // --- Private Event Handlers ---
+  // --- Event Handlers ---
 
+  /** Handles focus landing *on the host* element */
   #handleFocus(event) {
-    // (No changes needed)
+    // Store initial value when the component gains focus interaction
     this.#initialValueOnFocus = this.#currentValue;
+    // Optionally delegate focus to the slotted element if it's editable
+    // if (!this.disabled && !this.readOnly && this.#slottedElement) {
+    //     this.#slottedElement.focus({ preventScroll: true }); // preventScroll might be useful
+    // }
   }
 
+  /** Handles focus leaving the host or the slotted element */
   #handleBlur(event) {
-    // (No changes needed - change event dispatched if value differs)
-    // Persistence saving happens on input/value change via the setter.
-    if (
-      this.#initialValueOnFocus !== null &&
-      this.#initialValueOnFocus !== this.#currentValue
-    ) {
-      this.#dispatchChangeEvent(); // Dispatch committed change event
+    // relatedTarget is where focus is going next
+    const relatedTarget = event.relatedTarget;
+
+    // Check if focus is moving *within* the component (host to slotted or vice versa)
+    // or staying within the shadow root (though less likely now)
+    if (relatedTarget === this || relatedTarget === this.#slottedElement || this.shadowRoot.contains(relatedTarget)) {
+      return; // Don't treat internal focus shifts as blur
+    }
+
+    // If focus is truly leaving the component and value changed, fire 'change'
+    if (this.#initialValueOnFocus !== null && this.#initialValueOnFocus !== this.#currentValue) {
+      this.#dispatchChangeEvent();
     }
     this.#initialValueOnFocus = null;
-    // Re-render on blur might be needed if placeholder visibility depends on focus state (it doesn't currently)
-    // this.#render();
   }
 
-  #handleInput(event) {
-    // This event fires on the internal span when its content changes via user input
-    if (this.#isProgrammaticChange || !this.#editableSpan) return;
+  /** Handles 'input' event *on the slotted element* */
+  #handleSlottedInput(event) {
+    if (this.#isProgrammaticChange || !this.#slottedElement) return;
 
-    // Double-check editability state (belt-and-suspenders)
+    // Stop propagation if needed? Usually not necessary unless nested.
+    // event.stopPropagation();
+
+    // Ensure the event target is indeed our slotted element (sanity check)
+    if (event.target !== this.#slottedElement) return;
+
+    // Double-check editability state
     if (this.readOnly || this.disabled) {
       event.preventDefault();
-      this.#render(); // Restore visual state if somehow changed
+      // Restore visual state (might be tricky if browser already updated)
+      this.#slottedElement.textContent = this.#currentValue;
       return;
     }
 
-    let currentSpanValue = this.#editableSpan.textContent ?? "";
+    let currentSlottedValue = this.#slottedElement.textContent ?? "";
     const maxLength = this.maxLength;
-
-    // Check and enforce maxLength BEFORE updating the component's value property
     let maxLengthExceeded = false;
-    if (maxLength !== null && currentSpanValue.length > maxLength) {
-      maxLengthExceeded = true;
-      // Truncate the value directly in the span first
-      currentSpanValue = currentSpanValue.substring(0, maxLength);
-      this.#editableSpan.textContent = currentSpanValue;
 
-      // Try to move cursor to the end after truncation (best-effort)
-      this.#moveCursorToEnd();
+    // Enforce maxLength
+    if (maxLength !== null && currentSlottedValue.length > maxLength) {
+      maxLengthExceeded = true;
+      currentSlottedValue = currentSlottedValue.substring(0, maxLength);
+      this.#slottedElement.textContent = currentSlottedValue; // Truncate directly
+      this.#moveCursorToEnd(); // Move cursor after truncation
     }
 
     // Update the component's value using the public setter.
-    // This ensures consistency: updates #currentValue, 'value' attribute,
-    // handles persistence (#saveToLocalStorage), and dispatches 'char-count'.
-    // The setter internally handles the #isProgrammaticChange flag.
-    this.value = currentSpanValue; // Use the setter
+    // This syncs #currentValue, 'value' attribute, persistence, and dispatches 'char-count'.
+    this.value = currentSlottedValue;
 
-    // Dispatch the 'input' event AFTER the value property is updated
+    // Dispatch the 'input' event *from the host* AFTER the value property is updated
     this.#dispatchInputEvent();
 
-    // Dispatch max-length event *after* input and value setting if truncation occurred
     if (maxLengthExceeded) {
-      this.#dispatchMaxLengthEvent(currentSpanValue, maxLength);
-    }
-
-    // Render is called within the setter if the value changed.
-  }
-
-  /** Helper to move cursor to end of span content */
-  #moveCursorToEnd() {
-    if (!this.#editableSpan || !this.shadowRoot) return;
-    try {
-      const range = document.createRange();
-      const sel = this.shadowRoot.getSelection(); // Get selection within shadow DOM
-      if (this.#editableSpan.firstChild && sel) {
-        // Check if there's a text node and selection object
-        const textNode = this.#editableSpan.firstChild;
-        const length = textNode.length; // Get length of the text node
-        range.setStart(textNode, length); // Set start and end to the end
-        range.collapse(true); // Collapse the range to the start point (which is the end)
-        sel.removeAllRanges(); // Remove any existing selection
-        sel.addRange(range); // Add the new collapsed range
-      } else if (sel) {
-        // Handle empty span case: simply ensure focus is inside
-        this.#editableSpan.focus();
-      }
-    } catch (e) {
-      console.warn(
-        `EditableText (${this.id}): Could not set cursor position.`,
-        e
-      );
+      this.#dispatchMaxLengthEvent(currentSlottedValue, maxLength);
     }
   }
 
-  #handleKeydown(event) {
-    // (No changes needed for persistence logic)
-    if (this.readOnly || this.disabled) {
-      // Allow navigation, selection, copy keys even when read-only/disabled
-      const isAllowedKey =
-        [
-          "Tab",
-          "ArrowLeft",
-          "ArrowRight",
-          "ArrowUp",
-          "ArrowDown",
-          "Home",
-          "End",
-          "PageUp",
-          "PageDown",
-          "Shift",
-          "Control",
-          "Alt",
-          "Meta",
-        ].includes(event.key) ||
-        ((event.ctrlKey || event.metaKey) &&
-          ["a", "c", "x"].includes(event.key.toLowerCase())); // Allow Ctrl+A/C/X
+  /** Handles 'keydown' event *on the slotted element* */
+  #handleSlottedKeydown(event) {
+    if (!this.#slottedElement) return;
 
-      if (!isAllowedKey) {
-        // Prevent any key that modifies content or could trigger actions
-        event.preventDefault();
-      }
+    // Allow navigation/selection/copy even if readonly/disabled
+    const isReadOnlyOrDisabled = this.readOnly || this.disabled;
+    const isAllowedKey =
+      [
+        "Tab", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown",
+        "Home", "End", "PageUp", "PageDown",
+        "Shift", "Control", "Alt", "Meta", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12"
+      ].includes(event.key) ||
+      ((event.ctrlKey || event.metaKey) && ["a", "c", "x"].includes(event.key.toLowerCase()));
+
+    if (isReadOnlyOrDisabled && !isAllowedKey) {
+      event.preventDefault();
       return;
     }
 
-    // Handle specific key actions when editable
-    switch (event.key) {
-      case "Enter":
-        // Prevent new lines in single-line mode
-        event.preventDefault();
-        // Explicitly trigger blur to commit changes (which might dispatch 'change' event)
-        this.blur();
-        break;
-      case "Escape":
-        event.preventDefault();
-        if (
-          this.#initialValueOnFocus !== null &&
-          this.#currentValue !== this.#initialValueOnFocus
-        ) {
-          // Use setter to revert, ensuring consistency (incl. persistence save of reverted value)
-          this.value = this.#initialValueOnFocus;
-        }
-        // Remove focus after reverting or if no change occurred
-        this.blur();
-        break;
-    }
-
-    // Prevent typing if maxLength will be exceeded (check *before* character is added)
-    const maxLength = this.maxLength;
-    if (
-      maxLength !== null &&
-      this.#currentValue.length >= maxLength &&
-      // Check if it's a character key that would increase length
-      !event.ctrlKey &&
-      !event.metaKey &&
-      !event.altKey &&
-      event.key.length === 1 && // Basic check for printable character
-      // Allow keys that don't add characters (Backspace, Delete, Arrows, etc.)
-      ![
-        "Backspace",
-        "Delete",
-        "ArrowLeft",
-        "ArrowRight",
-        "ArrowUp",
-        "ArrowDown",
-        "Home",
-        "End",
-        "Tab",
-        "Enter",
-        "Escape",
-      ].includes(event.key)
-    ) {
-      // Check if text is selected - allow typing if it will replace selected text
-      const selection = this.shadowRoot?.getSelection();
-      if (!selection || selection.isCollapsed) {
-        event.preventDefault(); // Prevent typing the character
-        // Dispatch event to indicate the limit was actively hit by typing attempt
-        this.#dispatchMaxLengthEvent(this.#currentValue, maxLength);
+    // Handle specific keys when editable
+    if (!isReadOnlyOrDisabled) {
+      switch (event.key) {
+        case "Enter":
+          // Prevent newlines if desired (often yes for single-line inputs)
+          // TODO: Maybe add a 'multiline' attribute/property later?
+          event.preventDefault();
+          this.blur(); // Commit changes by blurring the host
+          break;
+        case "Escape":
+          event.preventDefault();
+          if (this.#initialValueOnFocus !== null && this.#currentValue !== this.#initialValueOnFocus) {
+            // Use setter to revert value and slotted content
+            this.value = this.#initialValueOnFocus;
+          }
+          this.blur(); // Remove focus
+          break;
       }
-      // If text is selected, the browser handles replacement, and the 'input'
-      // event handler will perform the length check *after* the change.
+
+      // Prevent typing if maxLength will be exceeded (check *before* character is added)
+      const maxLength = this.maxLength;
+      if (
+        maxLength !== null &&
+        this.#currentValue.length >= maxLength &&
+        !event.ctrlKey && !event.metaKey && !event.altKey &&
+        event.key.length === 1 && // Basic check for printable char
+        !["Backspace", "Delete"].includes(event.key) && // Allow deletion keys
+        !isAllowedKey // Don't block navigation keys already checked
+      ) {
+        // Check if text is selected - allow typing if it replaces selection
+        const selection = window.getSelection(); // Selection is within the slotted element
+        if (!selection || selection.isCollapsed || !this.#slottedElement.contains(selection.anchorNode)) {
+            event.preventDefault();
+            this.#dispatchMaxLengthEvent(this.#currentValue, maxLength);
+        }
+      }
     }
   }
 
-  // --- Private Custom Event Dispatchers ---
-  // (No changes needed)
+  /** Helper to move cursor to end of the slotted element's content */
+  #moveCursorToEnd() {
+    if (!this.#slottedElement || !window.getSelection) return;
+    try {
+      const selection = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(this.#slottedElement);
+      range.collapse(false); // Collapse to the end
+      if (selection) {
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    } catch (e) {
+      console.warn(`EditableText (${this.id || 'no-id'}): Could not set cursor position.`, e);
+    }
+  }
+
+  // --- Custom Event Dispatchers (Dispatch from Host) ---
 
   #dispatchInputEvent() {
-    this.dispatchEvent(
-      new CustomEvent("input", {
-        detail: { value: this.#currentValue },
-        bubbles: true,
-        composed: true,
-      })
-    );
+    this.dispatchEvent(new CustomEvent("input", {
+      detail: { value: this.#currentValue }, bubbles: true, composed: true
+    }));
   }
 
   #dispatchChangeEvent() {
-    this.dispatchEvent(
-      new CustomEvent("change", {
-        detail: { value: this.#currentValue },
-        bubbles: true,
-        composed: true,
-      })
-    );
+    this.dispatchEvent(new CustomEvent("change", {
+      detail: { value: this.#currentValue }, bubbles: true, composed: true
+    }));
   }
 
   #dispatchCharCountEvent() {
-    const maxLength = this.maxLength;
-    this.dispatchEvent(
-      new CustomEvent("char-count", {
-        detail: {
-          value: this.#currentValue,
-          length: this.#currentValue.length,
-          maxLength: maxLength,
-        },
-        bubbles: true,
-        composed: true,
-      })
-    );
+    this.dispatchEvent(new CustomEvent("char-count", {
+      detail: { value: this.#currentValue, length: this.#currentValue.length, maxLength: this.maxLength },
+      bubbles: true, composed: true
+    }));
   }
 
   #dispatchMaxLengthEvent(currentValue, maxLength) {
-    this.dispatchEvent(
-      new CustomEvent("max-length", {
-        detail: {
-          value: currentValue,
-          length: currentValue.length,
-          maxLength: maxLength,
-        },
-        bubbles: true,
-        composed: true,
-      })
-    );
+    this.dispatchEvent(new CustomEvent("max-length", {
+      detail: { value: currentValue, length: currentValue.length, maxLength: maxLength },
+      bubbles: true, composed: true
+    }));
   }
 }
 
-// Define the custom element if it hasn't been defined already
+// Define the custom element
 if (!customElements.get("editable-text")) {
   customElements.define("editable-text", EditableText);
 }
 
 // Optional: Export the class if using modules
 export default EditableText;
+

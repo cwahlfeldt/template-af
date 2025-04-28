@@ -7,6 +7,7 @@ import useTemplateValues from "../hooks/useTemplateValues";
 import TemplateRenderer from "../components/TemplateRenderer";
 import TemplateControls from "../components/navigation/TemplateControls";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
+import { exportElementAsImage } from "../utils/exportElementAsImage"; // Adjust path
 
 /**
  * Template Editor page component
@@ -38,6 +39,8 @@ const TemplateEditor: React.FC = () => {
     return null;
   }
 
+
+
   // No helper function needed
 
   /**
@@ -45,30 +48,33 @@ const TemplateEditor: React.FC = () => {
    */
   const downloadTemplateAsPng = async (): Promise<void> => {
     if (!templateRef.current) return;
+    // const element = templateRef.current;
+    // const ogTransform = element.style.transform;
 
     try {
-      // Create a clone of the template element to work with
       const element = templateRef.current;
+      exportElementAsImage(element);
 
-      // Don't change the active tab - keep the editing UI visible
-      // This ensures text remains visible in the browser
+      // element.style.transform = "scale(1)";
 
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: "#ffffff",
-        logging: false,
-      });
+      // const canvas = await html2canvas(element, {
+      //   scale: 2,
+      //   useCORS: true,
+      //   allowTaint: true,
+      //   backgroundColor: null,
+      //   logging: false,
+      // });
 
-      const dataUrl = canvas.toDataURL("image/png");
-      const link = document.createElement("a");
-      link.download = `${template?.id}-template.png`;
-      link.href = dataUrl;
-      link.click();
+      // const dataUrl = canvas.toDataURL("image/png");
+      // const link = document.createElement("a");
+      // link.download = `${template?.id}-template.png`;
+      // link.href = dataUrl;
+      // link.click();
     } catch (error) {
       console.error("Error generating image:", error);
-    }
+    } // finally {
+    //   element.style.transform = ogTransform;
+    // }
   };
 
   /**
@@ -104,7 +110,7 @@ const TemplateEditor: React.FC = () => {
       // This ensures text remains visible in the browser
 
       const canvas = await html2canvas(element, {
-        scale: 2,
+        scale: 1,
         useCORS: true,
         allowTaint: true,
         backgroundColor: "#ffffff",
@@ -153,6 +159,15 @@ const TemplateEditor: React.FC = () => {
   const supportedFormats = template?.printConfig?.formats || ["png"];
   const supportsPdf = supportedFormats.includes("pdf");
   const supportsPng = supportedFormats.includes("png");
+  const dimensions = {
+    width: template?.printConfig?.dimensions?.width,
+    height: template?.printConfig?.dimensions?.height,
+  };
+  const aspectRatio =
+    template?.printConfig?.orientation === "landscape"
+      ? `${dimensions.width} / ${dimensions.height}`
+      : `${dimensions.height} / ${dimensions.width}`;
+  const scale = template?.printConfig?.initialScale ?? 1;
 
   // Get preview options based on template's previewSizes
   const getPreviewOptions = () => {
@@ -214,8 +229,12 @@ const TemplateEditor: React.FC = () => {
         canFlip={!!template?.hasBackSide}
       />
       <div className="justify-center gap-12 w-full">
-        <div className="p-6 flex w-screen relative justify-center items-center h-full min-h-screen">
-          <div className="relative" ref={templateRef}>
+        <div className="p-6 flex w-screen relative justify-center items-center h-screen">
+          <div
+            className="relative print"
+            ref={templateRef}
+            style={{ aspectRatio }}
+          >
             <TemplateRenderer
               template={template!}
               values={values}

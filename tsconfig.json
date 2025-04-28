@@ -4,7 +4,7 @@
     "useDefineForClassFields": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "module": "ESNext",
-    "skipLibCheck": true,
+    "skipLibCheck": false,
     "esModuleInterop": true,
 
     /* Bundler mode */
@@ -14,15 +14,15 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
+    "allowJs": true,
 
     /* Linting - gradually increasing strictness */
-    "strict": true,
+    "strict": false,
     "noImplicitAny": false /* We'll enable this later */,
     "strictNullChecks": true,
     "noUnusedLocals": false /* We'll enable this later */,
     "noUnusedParameters": false /* We'll enable this later */,
     "noFallthroughCasesInSwitch": true,
-    "allowJs": true,
 
     /* Paths */
     "baseUrl": ".",
@@ -31,6 +31,5 @@
     },
     "experimentalDecorators": true
   },
-  "include": ["src", "src/**/*.ts", "src/**/*.tsx"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "include": ["src", "src/**/*.ts", "src/**/*.tsx", "src/**/*.d.ts"]
 }

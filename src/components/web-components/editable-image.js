@@ -1,16 +1,19 @@
 /**
  * @class EditableImage
  * @extends HTMLElement
- * @description A custom web component that displays an image and allows users
- * to replace it by selecting a new image file. It supports features
- * like read-only/disabled states, preview mode, placeholder images,
- * and optional persistence to localStorage.
+ * @description A custom web component that wraps a slotted `<img>` element,
+ * allowing users to replace its source by selecting a new image file.
+ * It expects an `<img>` tag to be provided via the default slot.
+ * Supports features like read-only/disabled states, preview mode,
+ * placeholder fallback on error, and optional persistence to localStorage.
+ *
+ * @slot - Default slot. Expects a single `<img>` element. The component will manage this image's `src` and `alt`.
  *
  * @fires input - Dispatched when the image source is changed by the user via file selection. Contains `{ detail: { src: newSrc } }`.
  * @fires change - Dispatched after the 'input' event when the image source is changed. Contains `{ detail: { src: newSrc } }`.
  *
- * @attr {string} src - The URL of the image to display.
- * @attr {string} alt - The alternative text for the image.
+ * @attr {string} src - Gets/sets the source URL of the managed `<img>` element. If not set initially, it may adopt the `src` from the slotted image.
+ * @attr {string} alt - Gets/sets the alternative text of the managed `<img>` element. If not set initially, it may adopt the `alt` from the slotted image.
  * @attr {boolean} readonly - If present, prevents the user from changing the image but keeps it interactive (e.g., hover effects).
  * @attr {boolean} disabled - If present, disables the component entirely, preventing interaction and reducing opacity.
  * @attr {boolean} preview - If present, acts like readonly, hiding the edit overlay. Useful for displaying the final state without edit controls.
@@ -22,12 +25,12 @@
  * @cssprop --editable-image-button-color - Text/icon color of the edit button (default: black).
  * @cssprop --editable-image-button-hover-bg - Background color of the edit button on hover/focus (default: #f0f0f0).
  * @cssprop --editable-image-disabled-opacity - Opacity of the component when disabled (default: 0.6).
- * @cssprop --editable-image-border-radius - Border radius for the container and image (default: 0px).
- * @cssprop --editable-image-aspect-ratio - Aspect ratio for the container (default: auto).
+ * @cssprop --editable-image-border-radius - Border radius for the container and slotted image (default: 0px).
+ * @cssprop --editable-image-aspect-ratio - Aspect ratio for the container (default: auto). Slotted image `object-fit` is set to `cover`.
  * @cssprop --editable-image-button-position - Position of the edit button within the overlay (default: top-right). Options: top-right, top-left, bottom-right, bottom-left, center.
  *
  * @csspart container - The main container div element.
- * @csspart image - The `<img>` element displaying the image.
+ * @csspart image - The slotted `<img>` element. This part is dynamically added to the slotted image.
  * @csspart overlay - The overlay `<div>` shown on hover.
  * @csspart edit-button - The `<button>` element used to trigger file selection.
  * @csspart edit-icon - The SVG icon inside the edit button.
@@ -35,8 +38,7 @@
 class EditableImage extends HTMLElement {
   /**
    * @static
-   * @property {string[]} observedAttributes - An array of attribute names to observe for changes.
-   * The `attributeChangedCallback` will be invoked when these change.
+   * @property {string[]} observedAttributes - Attributes to monitor for changes.
    */
   static observedAttributes = [
     "src",
@@ -49,36 +51,40 @@ class EditableImage extends HTMLElement {
   ];
 
   // Private instance fields
-  #shadowRoot; // Encapsulated Shadow DOM root
-  #container; // The main container element (div)
-  #imageElement; // The <img> element
-  #overlay; // The overlay div shown on hover
-  #editButton; // The button to trigger file selection
-  #fileInput; // The hidden <input type="file"> element
-  #placeholderSrc = "https://placehold.co/400x400"; // Default placeholder image URL
+  #shadowRoot;
+  #container;
+  #imageElement = null; // Reference to the slotted <img> element
+  #overlay;
+  #editButton;
+  #fileInput;
+  #slot; // Reference to the default slot
+  #placeholderSrc = "https://placehold.co/400x400/eee/aaa?text=Error"; // Placeholder for load errors
+  #isInitialized = false; // Flag to prevent premature updates
 
   /**
    * @constructor
-   * Initializes the component, creates the Shadow DOM, and sets up the initial structure and event listeners.
    */
   constructor() {
-    super(); // Always call super() first in constructor
-    // Create a Shadow DOM for encapsulation
+    super();
     this.#shadowRoot = this.attachShadow({ mode: "open" });
-    // Build the internal DOM structure and apply styles
     this.#createStructureAndStyles();
-    // Attach event listeners to interactive elements
-    this.#addEventListeners();
+    this.#addEventListeners(); // Basic listeners (button, file input)
   }
 
   /**
    * @method connectedCallback
-   * Called when the element is added to the document's DOM.
-   * Used for initialization tasks like setting initial state based on attributes,
-   * upgrading properties, and potentially loading persisted data.
+   * Called when the element is added to the DOM.
+   * Finds the slotted image, syncs attributes, and sets initial state.
    */
   connectedCallback() {
-    // Upgrade properties set before the element was defined or connected
+    // Find the slot and listen for changes
+    this.#slot = this.#shadowRoot.querySelector("slot");
+    this.#slot.addEventListener("slotchange", this.#handleSlotChange);
+
+    // Initial attempt to find the slotted image
+    this.#findAndInitializeSlottedImage();
+
+    // Upgrade properties set before definition/connection
     this.#upgradeProperty("src");
     this.#upgradeProperty("alt");
     this.#upgradeProperty("readOnly");
@@ -87,48 +93,48 @@ class EditableImage extends HTMLElement {
     this.#upgradeProperty("persist");
     this.#upgradeProperty("storageKey");
 
-    // Set the initial visual state based on current attributes
-    this.#updateRendering();
-    // Set the initial interactive state (enabled/disabled/readonly)
+    // Set visual/interactive state based on current attributes
     this.#updateEditableState();
 
-    // If persistence is enabled, load the image source and alt text from localStorage
+    // Load from localStorage if persistence is enabled *after* initial setup
     if (this.persist) {
       this.#loadFromLocalStorage();
     }
+
+    this.#isInitialized = true; // Mark initialization complete
   }
 
   /**
    * @method disconnectedCallback
-   * Called when the element is removed from the document's DOM.
-   * Used for cleanup tasks. Event listeners attached to Shadow DOM children
-   * are typically garbage-collected automatically, so explicit removal might not be needed here.
+   * Called when the element is removed from the DOM. Cleans up listeners.
    */
   disconnectedCallback() {
-    // Listeners on shadow DOM elements are usually garbage collected automatically.
-    // If listeners were attached to the `window` or `document`, they should be removed here.
+    if (this.#slot) {
+      this.#slot.removeEventListener("slotchange", this.#handleSlotChange);
+    }
+    // Remove error listener from the potentially detached image element
+    if (this.#imageElement) {
+        this.#imageElement.onerror = null;
+    }
+    this.#isInitialized = false;
   }
 
   /**
    * @method attributeChangedCallback
-   * Called when one of the `observedAttributes` changes.
-   * @param {string} name - The name of the attribute that changed.
-   * @param {string|null} oldValue - The previous value of the attribute.
-   * @param {string|null} newValue - The new value of the attribute.
+   * Called when observed attributes change.
    */
   attributeChangedCallback(name, oldValue, newValue) {
-    // Avoid unnecessary work if the value hasn't actually changed
-    if (oldValue === newValue) {
+    // Don't run updates until connectedCallback has finished basic setup
+    if (!this.#isInitialized || oldValue === newValue) {
       return;
     }
 
-    // Handle changes based on the attribute name
     switch (name) {
       case "src":
       case "alt":
-        // Update the displayed image or its alt text
+        // Update the slotted image rendering
         this.#updateRendering();
-        // If persistence is enabled, save the new value
+        // Save to localStorage if persistence is enabled
         if (this.persist) {
           this.#saveToLocalStorage();
         }
@@ -136,328 +142,243 @@ class EditableImage extends HTMLElement {
       case "readonly":
       case "disabled":
       case "preview":
-        // Update the component's interactive state (enabled/disabled/readonly appearance)
+        // Update interactive state
         this.#updateEditableState();
         break;
       case "persist":
-        // If the 'persist' attribute is added, attempt to load from localStorage
+        // If persist is added, try loading data
         if (this.persist) {
           this.#loadFromLocalStorage();
         }
-        // Note: If 'persist' is removed, we don't automatically clear localStorage here,
-        // but saving will stop. Clearing could be added if desired.
+        // Note: Removing persist doesn't clear localStorage, just stops saving/loading.
         break;
       case "storage-key":
-        // If the storage key changes and persistence is enabled, reload data
-        // using the new key. This might overwrite current state if the new key exists.
+        // If key changes and persist is on, reload using the new key
         if (this.persist) {
-          // Consider if loading immediately is the desired behavior, or if it should
-          // only affect future saves/loads. Current behavior loads immediately.
-          this.#loadFromLocalStorage();
+          this.#loadFromLocalStorage(); // Load data associated with the new key
         }
         break;
     }
   }
 
-  // --- Public Property Accessors (Getters/Setters) ---
+  // --- Public Property Accessors ---
 
-  /**
-   * @property {string} src - Gets or sets the image source URL. Reflects the 'src' attribute.
-   */
   get src() {
     return this.getAttribute("src") || "";
   }
 
   set src(value) {
-    // Ensure the value is a string, defaulting to empty string if null/undefined
-    const Svalue = String(value || "");
-    this.setAttribute("src", Svalue);
-    // Note: attributeChangedCallback will handle the update logic
+    const stringValue = String(value || "");
+    this.setAttribute("src", stringValue);
+    // attributeChangedCallback handles the update
   }
 
-  /**
-   * @property {string} alt - Gets or sets the image alt text. Reflects the 'alt' attribute.
-   */
   get alt() {
     return this.getAttribute("alt") || "";
   }
 
   set alt(value) {
-    // Ensure the value is a string, defaulting to empty string if null/undefined
-    const Svalue = String(value || "");
-    this.setAttribute("alt", Svalue);
-    // Note: attributeChangedCallback will handle the update logic
+    const stringValue = String(value || "");
+    this.setAttribute("alt", stringValue);
+    // attributeChangedCallback handles the update
   }
 
-  /**
-   * @property {boolean} readOnly - Gets or sets the read-only state. Reflects the 'readonly' attribute.
-   */
   get readOnly() {
     return this.hasAttribute("readonly");
   }
 
   set readOnly(value) {
-    // Use toggleAttribute for boolean attributes
     this.toggleAttribute("readonly", Boolean(value));
-    // Note: attributeChangedCallback will handle the update logic
+    // attributeChangedCallback handles the update
   }
 
-  /**
-   * @property {boolean} disabled - Gets or sets the disabled state. Reflects the 'disabled' attribute.
-   */
   get disabled() {
     return this.hasAttribute("disabled");
   }
 
   set disabled(value) {
-    // Use toggleAttribute for boolean attributes
     this.toggleAttribute("disabled", Boolean(value));
-    // Note: attributeChangedCallback will handle the update logic
+    // attributeChangedCallback handles the update
   }
 
-  /**
-   * @property {boolean} preview - Gets or sets the preview state. Reflects the 'preview' attribute.
-   */
   get preview() {
     return this.hasAttribute("preview");
   }
 
   set preview(value) {
-    // Use toggleAttribute for boolean attributes
     this.toggleAttribute("preview", Boolean(value));
-    // Note: attributeChangedCallback will handle the update logic
+    // attributeChangedCallback handles the update
   }
 
-  /**
-   * @property {boolean} persist - Gets or sets the persistence state. Reflects the 'persist' attribute.
-   */
   get persist() {
     return this.hasAttribute("persist");
   }
 
   set persist(value) {
-    // Use toggleAttribute for boolean attributes
     this.toggleAttribute("persist", Boolean(value));
-    // Note: attributeChangedCallback will handle the update logic
+    // attributeChangedCallback handles the update
   }
 
-  /**
-   * @property {string} storageKey - Gets or sets the localStorage key. Reflects the 'storage-key' attribute.
-   * Falls back to a generated default key if the attribute is not set.
-   */
   get storageKey() {
     return this.getAttribute("storage-key") || this.#getDefaultStorageKey();
   }
 
   set storageKey(value) {
     this.setAttribute("storage-key", String(value));
-    // Note: attributeChangedCallback will handle the update logic
+    // attributeChangedCallback handles the update
   }
 
   // --- Private Helper Methods ---
 
   /**
    * @method #upgradeProperty
-   * Ensures that properties set on the instance before it's defined or connected
-   * are correctly handled by the component's setters.
-   * See: https://developers.google.com/web/fundamentals/web-components/best-practices#lazy-properties
-   * @param {string} prop - The name of the property to upgrade.
+   * Ensures properties set before upgrade are handled by setters.
+   * @param {string} prop - Property name.
    * @private
    */
   #upgradeProperty(prop) {
-    // Check if the instance itself has the property (meaning it was set before upgrade)
     if (this.hasOwnProperty(prop)) {
-      // Temporarily store the value
       let value = this[prop];
-      // Delete the instance property so it doesn't shadow the prototype property
       delete this[prop];
-      // Re-apply the value using the component's setter
       this[prop] = value;
     }
   }
 
   /**
    * @method #createStructureAndStyles
-   * Creates the component's internal DOM structure (Shadow DOM) and applies necessary CSS styles.
+   * Creates the Shadow DOM structure with a slot and styles.
    * @private
    */
   #createStructureAndStyles() {
-    // Create the main container div
+    // Container
     this.#container = document.createElement("div");
     this.#container.className = "editable-image-container";
-    this.#container.setAttribute("part", "container"); // Expose part for external styling
+    this.#container.setAttribute("part", "container");
 
-    // Create the image element
-    this.#imageElement = document.createElement("img");
-    this.#imageElement.setAttribute("part", "image"); // Expose part
+    // Slot for the user-provided <img> element
+    const slot = document.createElement("slot");
+    // No name attribute means it's the default slot
+    this.#container.appendChild(slot);
 
-    // --- Image Error Handling ---
-    // Set up an error handler for the main image element
-    this.#imageElement.onerror = () => {
-      // Check if the failed source is the primary 'src' attribute value
-      // (and not already the placeholder we tried to load)
-      if (this.#imageElement.src !== this.#placeholderSrc) {
-        console.warn(
-          `EditableImage: Failed to load src "${this.src}". Falling back to placeholder.`
-        );
-        // If the primary source fails, attempt to load the placeholder image
-        this.#imageElement.src = this.#placeholderSrc;
-      } else {
-        // If the placeholder itself fails to load (e.g., network error, invalid placeholder URL)
-        console.error(
-          `EditableImage: Failed to load placeholder image "${
-            this.#placeholderSrc
-          }".`
-        );
-        // Hide the broken image icon or display alt text. Hiding is chosen here.
-        // Alternatively, set a background color on the container or show alt text.
-        this.#imageElement.style.display = "none";
-      }
-    };
-    this.#container.appendChild(this.#imageElement);
-
-    // Create the overlay div (shown on hover)
+    // Overlay
     this.#overlay = document.createElement("div");
     this.#overlay.className = "editable-image-overlay";
-    this.#overlay.setAttribute("part", "overlay"); // Expose part
+    this.#overlay.setAttribute("part", "overlay");
     this.#container.appendChild(this.#overlay);
 
-    // Create the edit button
+    // Edit Button
     this.#editButton = document.createElement("button");
     this.#editButton.className = "editable-image-edit-button";
-    this.#editButton.setAttribute("part", "edit-button"); // Expose part
-    this.#editButton.setAttribute("aria-label", "Edit image"); // Accessibility
-    // Use an SVG icon for the button (Lucide icon: image-plus)
+    this.#editButton.setAttribute("part", "edit-button");
+    this.#editButton.setAttribute("aria-label", "Edit image");
     this.#editButton.innerHTML = /*html*/ `
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-image-plus-icon" part="edit-icon">
-        <path d="M16 5h6"/>
-        <path d="M19 2v6"/>
-        <path d="M21 11.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5"/>
-        <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
-        <circle cx="9" cy="9" r="2"/>
-      </svg>
-    `;
+        <path d="M16 5h6"/><path d="M19 2v6"/><path d="M21 11.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/><circle cx="9" cy="9" r="2"/>
+      </svg>`;
     this.#overlay.appendChild(this.#editButton);
 
-    // Create the hidden file input element
+    // Hidden File Input
     this.#fileInput = document.createElement("input");
     this.#fileInput.type = "file";
-    this.#fileInput.accept = "image/*"; // Accept only image files
-    this.#fileInput.style.display = "none"; // Keep it hidden
-    this.#fileInput.setAttribute("aria-hidden", "true"); // Hide from accessibility tree
+    this.#fileInput.accept = "image/*";
+    this.#fileInput.style.display = "none";
+    this.#fileInput.setAttribute("aria-hidden", "true");
     this.#container.appendChild(this.#fileInput);
 
-    // Create the style element for Shadow DOM styles
+    // Styles
     const styleEl = document.createElement("style");
     styleEl.textContent = /*css*/ `
       /* --- Host Styles & CSS Custom Properties --- */
       :host {
-        /* Define CSS custom properties for easy theming */
+        /* CSS custom properties for theming */
         --editable-image-overlay-bg: rgba(0, 0, 0, 0.5);
         --editable-image-button-bg: white;
         --editable-image-button-color: black;
         --editable-image-button-hover-bg: #f0f0f0;
         --editable-image-disabled-opacity: 0.6;
-        --editable-image-border-radius: 0px; /* Default: no rounding */
-        --editable-image-aspect-ratio: auto; /* Default: image determines aspect ratio */
-        --editable-image-button-position: top-right; /* Default button position */
+        --editable-image-border-radius: 0px;
+        --editable-image-aspect-ratio: auto;
+        --editable-image-button-position: top-right;
 
-        /* Basic display and positioning for the host element */
-        display: inline-block; /* Behaves like an inline element but respects width/height */
-        position: relative; /* Needed for absolute positioning of overlay */
-        vertical-align: top; /* Align with the top of the text line */
+        /* Basic display and positioning */
+        display: inline-block;
+        position: relative;
+        vertical-align: top;
+        width: inherit; /* Default width, override as needed */
+        height: inherit; /* Default height, override as needed */
       }
-
-      /* Hide the component if the 'hidden' attribute is present */
-      :host([hidden]) {
-        display: none;
-      }
+      :host([hidden]) { display: none; }
 
       /* --- Container Styles --- */
       .editable-image-container {
-        position: relative; /* Context for overlay */
-        display: block; /* Take up available width */
-        overflow: hidden; /* Clip contents, e.g., if image is larger */
-        cursor: pointer; /* Indicate interactivity */
-        border-radius: var(--editable-image-border-radius); /* Apply custom border radius */
-        aspect-ratio: var(--editable-image-aspect-ratio); /* Apply custom aspect ratio */
-        width: 100%; /* Fill the host element */
-        height: 100%; /* Fill the host element */
-        background-color: #eee; /* Basic background for loading/error states */
+        position: relative;
+        display: block;
+        overflow: hidden;
+        cursor: pointer;
+        border-radius: var(--editable-image-border-radius);
+        aspect-ratio: var(--editable-image-aspect-ratio);
+        background-color: #eee; /* Background shown if image fails badly */
       }
 
       /* --- Disabled/Readonly State Styles --- */
-      /* Apply opacity and non-interactive cursor when disabled */
       :host([disabled]) .editable-image-container {
         opacity: var(--editable-image-disabled-opacity);
         cursor: not-allowed;
       }
-      /* Use default cursor when readonly or in preview mode (not editable) */
       :host([readonly]) .editable-image-container,
       :host([preview]) .editable-image-container {
         cursor: default;
       }
 
-      /* --- Image Styles --- */
-      img {
-        display: block; /* Remove extra space below inline images */
-        width: 100%; /* Scale image to fit container width */
-        height: 100%; /* Scale image to fit container height */
-        object-fit: cover; /* Cover the container, cropping if necessary */
+      /* --- Slotted Image Styles --- */
+      /* Target the <img> element provided by the user via the slot */
+      ::slotted(img) {
+        display: block;
         border-radius: var(--editable-image-border-radius); /* Match container rounding */
-        background-color: transparent; /* Ensure container background shows if image fails */
+        background-color: transparent; /* Allow container background to show */
       }
 
       /* --- Overlay Styles --- */
       .editable-image-overlay {
-        position: absolute; /* Position relative to container */
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: var(--editable-image-overlay-bg); /* Customizable background */
-        display: flex; /* Use flexbox for positioning the button */
-        opacity: 0; /* Hidden by default */
-        transition: opacity 0.2s ease-in-out; /* Smooth fade-in/out */
-        pointer-events: none; /* Don't intercept clicks by default */
-        border-radius: var(--editable-image-border-radius); /* Match container */
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background-color: var(--editable-image-overlay-bg);
+        display: flex;
+        opacity: 0;
+        transition: opacity 0.2s ease-in-out;
+        pointer-events: none; /* Don't block interactions below by default */
+        border-radius: var(--editable-image-border-radius);
       }
 
-      /* --- Button Positioning within Overlay (using CSS variable) --- */
-      /* Default (top-right) and fallback if variable is not set */
+      /* --- Button Positioning within Overlay --- */
+      /* Default (top-right) & fallback */
       :host([style*="--editable-image-button-position: top-right"]) .editable-image-overlay,
       :host(:not([style*="--editable-image-button-position"])) .editable-image-overlay {
-        align-items: flex-start; /* Align button to the top */
-        justify-content: flex-end; /* Align button to the right */
+        align-items: flex-start; justify-content: flex-end;
       }
       :host([style*="--editable-image-button-position: top-left"]) .editable-image-overlay {
-        align-items: flex-start; /* Align button to the top */
-        justify-content: flex-start; /* Align button to the left */
+        align-items: flex-start; justify-content: flex-start;
       }
       :host([style*="--editable-image-button-position: bottom-right"]) .editable-image-overlay {
-        align-items: flex-end; /* Align button to the bottom */
-        justify-content: flex-end; /* Align button to the right */
+        align-items: flex-end; justify-content: flex-end;
       }
       :host([style*="--editable-image-button-position: bottom-left"]) .editable-image-overlay {
-        align-items: flex-end; /* Align button to the bottom */
-        justify-content: flex-start; /* Align button to the left */
+        align-items: flex-end; justify-content: flex-start;
       }
       :host([style*="--editable-image-button-position: center"]) .editable-image-overlay {
-        align-items: center; /* Align button vertically center */
-        justify-content: center; /* Align button horizontally center */
+        align-items: center; justify-content: center;
       }
 
-
       /* --- Hover Interaction --- */
-      /* Show overlay when hovering over the container */
+      /* Show overlay on hover */
       .editable-image-container:hover .editable-image-overlay {
          opacity: 1;
       }
-      /* Hide overlay and prevent interaction if disabled, readonly, or preview */
+      /* Hide overlay if not editable */
        :host([disabled]) .editable-image-overlay,
        :host([readonly]) .editable-image-overlay,
        :host([preview]) .editable-image-overlay {
-         opacity: 0 !important; /* Ensure it stays hidden */
+         opacity: 0 !important;
          pointer-events: none;
        }
 
@@ -465,243 +386,331 @@ class EditableImage extends HTMLElement {
       .editable-image-edit-button {
         background-color: var(--editable-image-button-bg);
         color: var(--editable-image-button-color);
-        border: none; /* Remove default border */
-        padding: 8px; /* Spacing inside the button */
-        border-radius: 50%; /* Make it circular */
-        cursor: pointer; /* Indicate it's clickable */
-        font-family: inherit; /* Use host's font */
-        outline: none; /* Remove default focus outline (rely on :focus-visible) */
-        transition: background-color 0.2s ease-in-out; /* Smooth background change */
-        display: flex; /* Center the SVG icon */
-        align-items: center;
-        justify-content: center;
-        width: 36px; /* Fixed size */
-        height: 36px; /* Fixed size */
-        margin: 8px; /* Spacing from the overlay edges */
-        pointer-events: auto; /* Allow clicks on the button itself */
-        flex-shrink: 0; /* Prevent shrinking if container is small */
+        border: none; padding: 8px; border-radius: 50%;
+        cursor: pointer; font-family: inherit; outline: none;
+        transition: background-color 0.2s ease-in-out;
+        display: flex; align-items: center; justify-content: center;
+        width: 36px; height: 36px; margin: 8px;
+        pointer-events: auto; /* Button is always clickable if visible */
+        flex-shrink: 0;
       }
-
-      /* Style the SVG icon inside the button */
-      .editable-image-edit-button svg {
-        width: 20px;
-        height: 20px;
-      }
-
-      /* Style button on hover and keyboard focus */
+      .editable-image-edit-button svg { width: 20px; height: 20px; }
       .editable-image-edit-button:hover,
-      .editable-image-edit-button:focus-visible { /* Use focus-visible for accessibility */
+      .editable-image-edit-button:focus-visible {
         background-color: var(--editable-image-button-hover-bg);
+      }
+
+      /* --- Slot Styles --- */
+      /* Ensure slot takes up space to receive the image */
+      slot {
+          display: block; /* Or flex, grid depending on layout needs */
+          width: 100%;
+          height: 100%;
+          border-radius: var(--editable-image-border-radius); /* Match container */
       }
     `;
 
-    // Append the styles and the container to the Shadow DOM
     this.#shadowRoot.appendChild(styleEl);
     this.#shadowRoot.appendChild(this.#container);
   }
 
   /**
    * @method #addEventListeners
-   * Attaches necessary event listeners to the internal elements (edit button, file input).
+   * Attaches event listeners for button clicks and file input changes.
+   * Slot change listener is added in connectedCallback.
    * @private
    */
   #addEventListeners() {
-    // Listen for clicks on the edit button
     this.#editButton.addEventListener("click", this.#handleEditButtonClick);
-    // Listen for changes on the hidden file input (when a file is selected)
     this.#fileInput.addEventListener("change", this.#handleFileChange);
+    // Note: slotchange listener added in connectedCallback
   }
+
+   /**
+   * @method #handleSlotChange
+   * Called when the content of the default slot changes.
+   * Re-finds the slotted image and updates the component's state.
+   * @private
+   */
+  #handleSlotChange = () => {
+    console.log("EditableImage: Slot content changed.");
+    // Clean up listener on the old image if it exists
+    if (this.#imageElement) {
+        this.#imageElement.onerror = null;
+    }
+    // Find the new image and re-initialize
+    this.#findAndInitializeSlottedImage();
+    // Re-apply current state (src, alt, editable status)
+    this.#updateRendering();
+    this.#updateEditableState();
+  };
+
+  /**
+   * @method #findAndInitializeSlottedImage
+   * Finds the first `<img>` element in the default slot, sets it as
+   * `this.#imageElement`, syncs attributes, and attaches the error handler.
+   * @private
+   */
+  #findAndInitializeSlottedImage() {
+    const assignedNodes = this.#slot.assignedNodes({ flatten: true });
+    const newImageElement = assignedNodes.find(node => node.nodeName === 'IMG');
+
+    if (newImageElement) {
+        this.#imageElement = newImageElement;
+        console.log("EditableImage: Found slotted image:", this.#imageElement);
+
+        // Add the 'image' part for CSS targeting and external styling hooks
+        this.#imageElement.setAttribute('part', 'image');
+
+        // Attach the error handler to the slotted image
+        this.#imageElement.onerror = this.#handleImageError;
+
+        // --- Initial Attribute Synchronization ---
+        // Sync component state TO slotted image if component attrs are set.
+        // Sync slotted image state TO component attrs if component attrs are NOT set.
+        const componentSrc = this.getAttribute('src');
+        const componentAlt = this.getAttribute('alt');
+        const imageSrc = this.#imageElement.getAttribute('src');
+        const imageAlt = this.#imageElement.getAttribute('alt');
+
+        if (componentSrc !== null) {
+            // If component has src, ensure image matches
+            if (this.#imageElement.src !== componentSrc) { // Check .src property for resolved URL
+                 this.#imageElement.src = componentSrc;
+            }
+        } else if (imageSrc !== null) {
+            // If component has no src, adopt image's src
+            // Use setAttribute to trigger attributeChangedCallback if needed later
+             this.setAttribute('src', imageSrc);
+        }
+
+        if (componentAlt !== null) {
+            // If component has alt, ensure image matches
+            if (this.#imageElement.alt !== componentAlt) {
+                this.#imageElement.alt = componentAlt;
+            }
+        } else if (imageAlt !== null) {
+            // If component has no alt, adopt image's alt
+             this.setAttribute('alt', imageAlt);
+        } else {
+            // Default alt if neither has one
+            this.#imageElement.alt = "Editable image";
+            // Optionally set the component attribute too
+            // this.setAttribute('alt', "Editable image");
+        }
+
+    } else {
+        console.warn('EditableImage: No <img> element found in the default slot.');
+        this.#imageElement = null;
+        // Optionally display an error/placeholder message in the container
+        // this.#container.innerHTML = '<p>Please slot an &lt;img&gt; element.</p>';
+    }
+  }
+
+
+  /**
+   * @method #handleImageError
+   * Event handler for the `onerror` event of the slotted `<img>`.
+   * Attempts to load a placeholder image.
+   * Arrow function preserves `this` context.
+   * @private
+   */
+  #handleImageError = () => {
+    if (!this.#imageElement) return; // Should not happen if called from onerror
+
+    const currentImageSrc = this.#imageElement.src; // The src that failed
+
+    // Avoid infinite loop if the placeholder itself fails
+    if (currentImageSrc !== this.#placeholderSrc) {
+      console.warn(
+        `EditableImage: Failed to load src "${currentImageSrc}". Falling back to placeholder.`
+      );
+      // Set the image element's src directly to the placeholder
+      this.#imageElement.src = this.#placeholderSrc;
+      // Optionally, update the component's src attribute to reflect the fallback state
+      // this.setAttribute('src', this.#placeholderSrc); // Be cautious with this - might trigger saves
+    } else {
+      // Placeholder failed to load
+      console.error(
+        `EditableImage: Failed to load placeholder image "${this.#placeholderSrc}". Hiding image.`
+      );
+      // Hide the broken image icon
+      this.#imageElement.style.setProperty('display', 'none', 'important');
+      // Optionally, show an error message in the container background
+      this.#container.style.backgroundColor = '#fdd'; // Light red background
+    }
+  };
+
 
   /**
    * @method #handleEditButtonClick
-   * Event handler for clicks on the edit button. Triggers a click on the hidden file input.
-   * Prevents action if the component is disabled, readonly, or in preview mode.
-   * Uses an arrow function to maintain the correct `this` context.
-   * @param {MouseEvent} event - The click event object.
+   * Opens the file picker when the edit button is clicked.
+   * Arrow function preserves `this` context.
+   * @param {MouseEvent} event
    * @private
    */
   #handleEditButtonClick = (event) => {
-    // Ignore clicks if not editable
     if (this.disabled || this.readOnly || this.preview) {
-      event.stopPropagation(); // Prevent event bubbling if needed
+      event.stopPropagation();
       return;
     }
-    // Programmatically click the hidden file input to open the file picker
     this.#fileInput.click();
-    // Prevent default button behavior (like form submission if it were in a form)
     event.preventDefault();
   };
 
   /**
    * @method #handleFileChange
-   * Event handler for the 'change' event on the hidden file input.
-   * Reads the selected image file as a Data URL and updates the component's `src`.
-   * Dispatches 'input' and 'change' events.
-   * Uses an arrow function to maintain the correct `this` context.
-   * @param {Event} event - The change event object from the file input.
+   * Reads the selected file, updates the component `src`, and dispatches events.
+   * Arrow function preserves `this` context.
+   * @param {Event} event
    * @private
    */
   #handleFileChange = (event) => {
-    // Ignore if not editable
     if (this.disabled || this.readOnly || this.preview) return;
 
-    // Get the selected file (first file in the list)
     const file = event.target.files?.[0];
-
-    // Check if a file was selected and if it's an image
     if (file && file.type.startsWith("image/")) {
-      // Create a FileReader to read the file content
       const reader = new FileReader();
-
-      // Define what happens when the file is successfully read
       reader.onload = (e) => {
-        // Set the component's src property to the Data URL result
-        // This will trigger the 'src' setter and attributeChangedCallback
+        // Update the component's src property.
+        // This triggers attributeChangedCallback -> updateRendering -> updates slotted img.
         this.src = e.target.result;
-        // Dispatch custom events to notify external listeners about the change
+        // Dispatch events *after* src has been set
         this.#dispatchInputEvent();
         this.#dispatchChangeEvent();
       };
-
-      // Define what happens if there's an error reading the file
       reader.onerror = (e) => {
         console.error("EditableImage: Error reading file:", e);
-        // Optionally, provide user feedback here (e.g., show an error message)
       };
-
-      // Start reading the file as a Data URL
       reader.readAsDataURL(file);
     }
-
-    // Reset the file input value. This allows selecting the same file again
-    // if the user cancels and then re-selects it.
-    event.target.value = "";
+    event.target.value = ""; // Reset file input
   };
 
   /**
    * @method #updateRendering
-   * Updates the `src` and `alt` attributes of the internal `<img>` element
+   * Updates the `src` and `alt` attributes of the slotted `<img>` element
    * based on the component's current `src` and `alt` properties/attributes.
-   * Handles falling back to the placeholder if `src` is empty or invalid.
    * @private
    */
   #updateRendering() {
-    const currentSrc = this.src; // Get current src value via getter
-    const currentAlt = this.alt || "Editable image"; // Get current alt or provide default
+    // Only proceed if we have a reference to the slotted image
+    if (!this.#imageElement) {
+        // If no image is slotted, perhaps clear the container or show a message?
+        // console.log("EditableImage: Cannot update rendering, no slotted image.");
+        return;
+    }
 
-    if (this.#imageElement) {
-      // Update the alt text
-      this.#imageElement.alt = currentAlt;
-      // Ensure the img element is visible (it might have been hidden on placeholder error)
-      this.#imageElement.style.display = "";
+    const componentSrc = this.src; // Get current src via getter
+    const componentAlt = this.alt || "Editable image"; // Get current alt or default
 
-      // Check if there's a valid source provided
-      if (currentSrc) {
-        // IMPORTANT: Only update the img.src if it's different from the current value.
-        // This prevents infinite loops if the src fails to load and the onerror handler
-        // tries to set it again (e.g., when falling back to placeholder).
-        if (this.#imageElement.src !== currentSrc) {
-          this.#imageElement.src = currentSrc;
+    // Ensure the image element is visible (might have been hidden by error handler)
+    this.#imageElement.style.display = '';
+    // Ensure container background is reset if it was changed on error
+    this.#container.style.backgroundColor = ''; // Reset potential error background
+
+    // Update alt text
+    if (this.#imageElement.alt !== componentAlt) {
+        this.#imageElement.alt = componentAlt;
+    }
+
+    // Update src, preventing potential loops if src fails and onerror runs
+    // Check against the resolved `src` property of the image element
+    const currentImageSrc = this.#imageElement.src;
+
+    if (componentSrc) {
+        // Only update if the component's src is different from the image's current resolved src
+        if (currentImageSrc !== componentSrc) {
+            this.#imageElement.src = componentSrc;
+            // Note: onerror handler (#handleImageError) will catch loading failures
         }
-      } else {
-        // If the component's src is empty, use the placeholder.
-        // Again, only set if it's not already the placeholder to avoid reload loops.
-        if (this.#imageElement.src !== this.#placeholderSrc) {
-          this.#imageElement.src = this.#placeholderSrc;
-        }
-      }
+    } else {
+        // If component's src is empty, should we clear the image src or show placeholder?
+        // Option 1: Clear the image src (might show broken icon if alt is also empty)
+        // if (currentImageSrc !== '') { // Check against empty string resolved URL? Tricky.
+        //    this.#imageElement.removeAttribute('src'); // Or set src = ''?
+        // }
+        // Option 2: Set to placeholder if component src is empty
+         if (currentImageSrc !== this.#placeholderSrc && currentImageSrc !== '') { // Avoid setting if already placeholder or truly empty
+            console.log("EditableImage: Component src is empty, setting image to placeholder.");
+            this.#imageElement.src = this.#placeholderSrc;
+         } else if (currentImageSrc === '' && this.#imageElement.hasAttribute('src')) {
+             // If image src resolved to empty but attribute exists, remove attribute
+             this.#imageElement.removeAttribute('src');
+         }
     }
   }
 
+
   /**
    * @method #updateEditableState
-   * Updates the visual and interactive state of the component based on the
-   * `disabled`, `readonly`, and `preview` attributes/properties.
-   * Toggles overlay visibility, cursor style, and the `disabled` attribute on the host.
+   * Updates visual/interactive state based on disabled/readonly/preview attributes.
    * @private
    */
   #updateEditableState() {
-    // Determine if the component should be interactive
     const isEditable = !(this.disabled || this.readOnly || this.preview);
 
-    // Control overlay interaction based on editable state
     if (this.#overlay) {
-      // Allow pointer events (like hover) on overlay only if editable
-      this.#overlay.style.pointerEvents = isEditable ? "" : "none";
-      // Note: CSS rules also hide the overlay visually in non-editable states
+      // Overlay pointer events are handled by CSS hover + attribute selectors now
+      // We just need to ensure the attributes are correctly reflected.
     }
 
-    // Adjust cursor style for the container
     if (this.#container) {
-      this.#container.style.cursor = isEditable
-        ? "pointer" // Editable: show pointer
-        : this.disabled
-        ? "not-allowed" // Disabled: show not-allowed cursor
-        : "default"; // Readonly/Preview: show default cursor
+      // Cursor is mainly handled by CSS attribute selectors now
     }
 
-    // Reflect the disabled state onto the host element itself for potential external styling
-    // Note: The :host([disabled]) CSS rule handles the opacity styling.
+    // Reflect disabled state onto the host for potential external styling
     this.toggleAttribute("disabled", this.disabled);
+    // Reflect readonly and preview for CSS selectors
+    this.toggleAttribute("readonly", this.readOnly);
+    this.toggleAttribute("preview", this.preview);
   }
 
   /**
    * @method #dispatchInputEvent
-   * Dispatches a non-standard 'input' event when the image source is changed by the user.
-   * This mimics the behavior of native form elements.
+   * Dispatches a non-standard 'input' event.
    * @private
    */
   #dispatchInputEvent() {
     this.dispatchEvent(
       new CustomEvent("input", {
-        detail: { src: this.src }, // Include the new source in the event detail
-        bubbles: true, // Allow the event to bubble up the DOM tree
-        composed: true, // Allow the event to cross Shadow DOM boundaries
+        detail: { src: this.src },
+        bubbles: true,
+        composed: true,
       })
     );
   }
 
   /**
    * @method #dispatchChangeEvent
-   * Dispatches a standard 'change' event after the 'input' event when the image source is changed.
-   * This also mimics the behavior of native form elements.
+   * Dispatches a standard 'change' event.
    * @private
    */
   #dispatchChangeEvent() {
     this.dispatchEvent(
       new CustomEvent("change", {
-        detail: { src: this.src }, // Include the new source in the event detail
-        bubbles: true, // Allow the event to bubble up the DOM tree
-        composed: true, // Allow the event to cross Shadow DOM boundaries
+        detail: { src: this.src },
+        bubbles: true,
+        composed: true,
       })
     );
   }
 
   /**
    * @method #getDefaultStorageKey
-   * Generates a default key for localStorage persistence if `storage-key` attribute is not set.
-   * Prefers using the element's ID, falls back to element name + index,
-   * and finally uses a random key as a last resort.
-   * @returns {string} The generated or determined storage key.
+   * Generates a default key for localStorage persistence.
+   * @returns {string} The storage key.
    * @private
    */
   #getDefaultStorageKey() {
-    // Prefer using the element's ID if available
     if (this.id) {
       return `editable-image-${this.id}`;
     }
-    // Fallback: Try to generate a key based on tag name and position in the DOM
-    // This is less reliable, especially with dynamic content changes.
     try {
-      // Find all elements with the same tag name in the document
       const siblings = document.querySelectorAll(this.localName);
-      // Find the index of this specific element within that list
       const index = Array.from(siblings).indexOf(this);
-      // Create a key using the tag name and index
       return `editable-image-${this.localName}-${index}`;
     } catch (e) {
-      // Last resort: If the index method fails (e.g., element not in main DOM yet),
-      // generate a pseudo-random key. This is not stable across page loads.
       console.warn(
         "EditableImage: Could not determine stable default storage key. Using random key."
       );
@@ -713,112 +722,87 @@ class EditableImage extends HTMLElement {
 
   /**
    * @method #saveToLocalStorage
-   * Saves the current `src` and `alt` values to localStorage using the determined storage key.
-   * Only executes if the `persist` attribute is present.
-   * Includes basic error handling for localStorage operations.
+   * Saves the component's current `src` and `alt` to localStorage.
    * @private
    */
   #saveToLocalStorage() {
-    // Only proceed if persistence is enabled
     if (!this.persist) return;
-
-    // Get the primary key and derive a key for the alt text
     const key = this.storageKey;
-    const altKey = `${key}-alt`; // Store alt separately
-
+    const altKey = `${key}-alt`;
     try {
-      const currentSrc = this.src;
-      const currentAlt = this.alt;
+      const currentSrc = this.src; // Use component's property
+      const currentAlt = this.alt; // Use component's property
 
-      // Save src, or remove if empty
+      // Don't save placeholder src or data URLs that might be huge? (Optional check)
+      // if (currentSrc && currentSrc.startsWith('data:')) {
+      //   console.warn("EditableImage: Skipping localStorage save for Data URL.");
+      //   return;
+      // }
+
       if (currentSrc) {
         localStorage.setItem(key, currentSrc);
       } else {
-        // If src is cleared, remove the item from storage
         localStorage.removeItem(key);
       }
 
-      // Save alt, or remove if empty
       if (currentAlt) {
         localStorage.setItem(altKey, currentAlt);
       } else {
-        // If alt is cleared, remove the item from storage
         localStorage.removeItem(altKey);
       }
     } catch (error) {
-      // Catch potential localStorage errors (e.g., storage full, security restrictions)
-      console.warn(
-        `EditableImage: Failed to save state to localStorage (key: ${key}). Error:`,
-        error
-      );
+      console.warn(`EditableImage: Failed to save state to localStorage (key: ${key}). Error:`, error);
     }
   }
 
   /**
    * @method #loadFromLocalStorage
-   * Loads the `src` and `alt` values from localStorage using the determined storage key.
-   * Updates the component's properties and rendering if saved values are found and differ
-   * from the current values. Only executes if the `persist` attribute is present.
-   * Includes basic error handling.
+   * Loads `src` and `alt` from localStorage and updates the component.
    * @private
    */
   #loadFromLocalStorage() {
-    // Only proceed if persistence is enabled
-    if (!this.persist) return;
+    if (!this.persist || !this.#isInitialized) return; // Don't load if not persisting or not ready
 
-    // Get the primary key and the key for the alt text
     const key = this.storageKey;
     const altKey = `${key}-alt`;
-
     try {
-      // Retrieve saved values from localStorage
       const savedSrc = localStorage.getItem(key);
       const savedAlt = localStorage.getItem(altKey);
+      let changed = false;
 
-      let changed = false; // Flag to track if any property was updated
-
-      // --- Update src ---
-      // Check if a saved source exists and if it's different from the current src
+      // Update src property if saved value exists and differs
       if (savedSrc !== null && savedSrc !== this.src) {
-        this.src = savedSrc; // Update the src property (will trigger setter/attribute update)
+        this.src = savedSrc; // Setter triggers attributeChangedCallback -> updateRendering
         changed = true;
       }
-      // Check if there's no saved source, but the component currently has a source
-      // This handles the case where the persisted image was removed/cleared.
+      // Handle case where saved value was removed
       else if (savedSrc === null && this.src !== "") {
-        this.src = ""; // Clear the src property
-        changed = true;
+         this.src = "";
+         changed = true;
       }
 
-      // --- Update alt ---
-      // Check if saved alt text exists and differs from the current alt
+      // Update alt property if saved value exists and differs
       if (savedAlt !== null && savedAlt !== this.alt) {
-        this.alt = savedAlt; // Update the alt property
+        this.alt = savedAlt; // Setter triggers attributeChangedCallback -> updateRendering
         changed = true;
       }
-      // Check if there's no saved alt, but the component currently has alt text
+       // Handle case where saved value was removed
       else if (savedAlt === null && this.alt !== "") {
-        this.alt = ""; // Clear the alt property
-        changed = true;
+         this.alt = "";
+         changed = true;
       }
 
-      // If either src or alt was updated from localStorage, re-render the image element
-      if (changed) {
-        this.#updateRendering();
-      }
+      // No explicit #updateRendering call needed here because
+      // setting this.src/this.alt triggers attributeChangedCallback,
+      // which calls #updateRendering.
+
     } catch (error) {
-      // Catch potential localStorage errors
-      console.warn(
-        `EditableImage: Failed to load state from localStorage (key: ${key}). Error:`,
-        error
-      );
+      console.warn(`EditableImage: Failed to load state from localStorage (key: ${key}). Error:`, error);
     }
   }
 }
 
 // --- Custom Element Registration ---
-// Define the custom element if it hasn't been defined already.
-// This prevents errors if the script is loaded multiple times.
 if (!customElements.get("editable-image")) {
   customElements.define("editable-image", EditableImage);
 }
