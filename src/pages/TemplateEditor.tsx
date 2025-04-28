@@ -186,8 +186,8 @@ const TemplateEditor: React.FC = () => {
 
   return (
     <>
-      <div className="fixed flex flex-col justify-center items-center w-full top-4 left-0 mb-6 z-1">
-        <div className="text-center max-w-md">
+      <div className="fixed flex flex-col justify-center pl-5 w-full top-4 left-0 mb-6 z-1">
+        <div>
           <h1 className="text-latte-pink text-5xl font-stretch-ultra-condensed font-extrabold italic">
             {template?.name}
           </h1>

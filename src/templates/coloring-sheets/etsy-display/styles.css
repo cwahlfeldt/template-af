@@ -2,16 +2,15 @@
 
 .coloring-sheet-display-container {
   position: relative;
-  width: 50vw;
-  height: 50vh;
-  max-width: 800px;
-  max-height: 600px;
-  background-color: #f8f5ff;
+  width: 800px;
+  height: 600px;
+  transform: scale(0.8);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   overflow: hidden;
-  padding: 40px;
+  padding: 1.5rem;
   display: flex;
   flex-direction: column;
+  aspect-ratio: 4 /3;
 }
 
 /* Title section */
@@ -22,17 +21,15 @@
 }
 
 .coloring-sheet-title {
-  font-size: calc(50vw * 0.06);
-  max-font-size: 48px;
+  font-size: 3rem;
   font-weight: 800;
   color: #333;
-  margin-bottom: 10px;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+  margin-bottom: 0.4rem;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .coloring-sheet-subtitle {
-  font-size: calc(50vw * 0.03);
-  max-font-size: 24px;
+  font-size: 1.5rem;
   font-weight: 500;
   color: #666;
 }
@@ -47,17 +44,17 @@
 /* Base image styling */
 .coloring-sheet-image {
   position: absolute;
-  width: calc(50vw * 0.25); /* Control width based on viewport */
+  width: 200px; /* Control width based on viewport */
   max-width: 200px;
   /* Exact 8.5×11 aspect ratio */
   aspect-ratio: 8.5 / 11;
   background-color: white;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .coloring-image {
   width: 100%;
-  height: 100%;
+  height: auto;
   object-fit: fill;
   /* Ensure image fills the entire div with exact 8.5:11 ratio */
 }
@@ -65,15 +62,15 @@
 /* Individual image positioning with random rotations and overlaps */
 .image-1 {
   transform: rotate(8deg);
-  top: -10%;
-  left: 5%;
+  top: 2rem;
+  left: -4rem;
   z-index: 11;
 }
 
 .image-2 {
   transform: rotate(-15deg);
-  top: 20%;
-  left: -8%;
+  top: 11rem;
+  left: -4rem;
   z-index: 12;
 }
 
@@ -86,8 +83,8 @@
 
 .image-4 {
   transform: rotate(-5deg);
-  bottom: 10%;
-  right: -5%;
+  bottom: -3rem;
+  right: 2rem;
   z-index: 14;
 }
 
@@ -100,9 +97,9 @@
 
 .image-6 {
   transform: rotate(-18deg);
-  top: -15%;
-  left: 35%;
-  z-index: 9;
+  top: 1rem;
+  left: 15rem;
+  z-index: 13;
 }
 
 .image-7 {
@@ -130,6 +127,7 @@
   transform: rotate(-25deg);
   top: 20%;
   left: 25%;
+  display: none;
   z-index: 6;
 }
 
@@ -138,6 +136,7 @@
   bottom: 15%;
   left: 40%;
   z-index: 5;
+  display: none;
 }
 
 .image-12 {
@@ -153,7 +152,7 @@
     box-shadow: none !important;
     border: none;
   }
-  
+
   .coloring-sheet-image {
     box-shadow: none !important;
     print-color-adjust: exact;

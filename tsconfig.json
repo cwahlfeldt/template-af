@@ -9,7 +9,7 @@
 
     /* Bundler mode */
     "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
+    "allowImportingTsExtensions": false,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
@@ -17,19 +17,20 @@
 
     /* Linting - gradually increasing strictness */
     "strict": true,
-    "noImplicitAny": false, /* We'll enable this later */
+    "noImplicitAny": false /* We'll enable this later */,
     "strictNullChecks": true,
-    "noUnusedLocals": false, /* We'll enable this later */
-    "noUnusedParameters": false, /* We'll enable this later */
+    "noUnusedLocals": false /* We'll enable this later */,
+    "noUnusedParameters": false /* We'll enable this later */,
     "noFallthroughCasesInSwitch": true,
     "allowJs": true,
-    
+
     /* Paths */
     "baseUrl": ".",
     "paths": {
       "src/*": ["./src/*"]
-    }
+    },
+    "experimentalDecorators": true
   },
-  "include": ["src"],
+  "include": ["src", "src/**/*.ts", "src/**/*.tsx"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

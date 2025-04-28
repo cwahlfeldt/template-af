@@ -12,8 +12,8 @@ export const metadata = {
   printConfig: {
     formats: ['png'] as Array<'pdf' | 'png'>,
     dimensions: {
-      width: 800,
-      height: 600,
+      width: 2000,
+      height: 1800,
       unit: 'px' as 'in' | 'mm' | 'pt' | 'px'
     },
     orientation: 'landscape' as 'portrait' | 'landscape',
