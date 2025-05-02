@@ -52,10 +52,11 @@ const EtsyDisplayColoringSheet: React.FC<TemplateComponentProps> = ({
 
   return (
     <>
-      {/* Main container */}
-      <div className="coloring-sheet-display-container">
-        {/* Title section */}
-        <color-changer id="change-colorid" persist>
+      <color-changer id="change-colorid" persist>
+        {/* Main container */}
+        <div className="coloring-sheet-display-container">
+          {/* Title section */}
+
           <div className="coloring-sheet-title-container">
             <div>
               <editable-text id="coloring-sheet-title" persist toolbar>
@@ -68,24 +69,27 @@ const EtsyDisplayColoringSheet: React.FC<TemplateComponentProps> = ({
               </editable-text>
             </div>
           </div>
-        </color-changer>
 
-        {/* Image display area with scattered layout */}
-        <div className="coloring-sheet-images-container">
-          {images.map((image, index) => (
-            <div key={index} className={`coloring-sheet-image image-${index}`}>
-              <editable-image persist>
-                <img
-                  id={`image${index + 1}`}
-                  src={image}
-                  alt="Coloring sheet 1"
-                  className="coloring-image"
-                />
-              </editable-image>
-            </div>
-          ))}
+          {/* Image display area with scattered layout */}
+          <div className="coloring-sheet-images-container">
+            {images.map((image, index) => (
+              <div
+                key={index}
+                className={`coloring-sheet-image image-${index}`}
+              >
+                <editable-image persist>
+                  <img
+                    id={`image${index + 1}`}
+                    src={image}
+                    alt="Coloring sheet 1"
+                    className="coloring-image"
+                  />
+                </editable-image>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      </color-changer>
     </>
   );
 };

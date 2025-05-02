@@ -92,7 +92,7 @@ class EditableImage extends HTMLElement {
       this.#slot.removeEventListener("slotchange", this.#handleSlotChange);
     }
     if (this.#imageElement) {
-        this.#imageElement.onerror = null;
+      this.#imageElement.onerror = null;
     }
     // No need to remove container click listener explicitly if shadow root is destroyed
     this.#isInitialized = false;
@@ -124,27 +124,54 @@ class EditableImage extends HTMLElement {
 
   // --- Public Property Accessors ---
   // (Getters/Setters for src, alt, readOnly, disabled, preview, persist, storageKey remain the same)
-  get src() { return this.getAttribute("src") || ""; }
-  set src(value) { this.setAttribute("src", String(value || "")); }
+  get src() {
+    return this.getAttribute("src") || "";
+  }
+  set src(value) {
+    this.setAttribute("src", String(value || ""));
+  }
 
-  get alt() { return this.getAttribute("alt") || ""; }
-  set alt(value) { this.setAttribute("alt", String(value || "")); }
+  get alt() {
+    return this.getAttribute("alt") || "";
+  }
+  set alt(value) {
+    this.setAttribute("alt", String(value || ""));
+  }
 
-  get readOnly() { return this.hasAttribute("readonly"); }
-  set readOnly(value) { this.toggleAttribute("readonly", Boolean(value)); }
+  get readOnly() {
+    return this.hasAttribute("readonly");
+  }
+  set readOnly(value) {
+    this.toggleAttribute("readonly", Boolean(value));
+  }
 
-  get disabled() { return this.hasAttribute("disabled"); }
-  set disabled(value) { this.toggleAttribute("disabled", Boolean(value)); }
+  get disabled() {
+    return this.hasAttribute("disabled");
+  }
+  set disabled(value) {
+    this.toggleAttribute("disabled", Boolean(value));
+  }
 
-  get preview() { return this.hasAttribute("preview"); }
-  set preview(value) { this.toggleAttribute("preview", Boolean(value)); }
+  get preview() {
+    return this.hasAttribute("preview");
+  }
+  set preview(value) {
+    this.toggleAttribute("preview", Boolean(value));
+  }
 
-  get persist() { return this.hasAttribute("persist"); }
-  set persist(value) { this.toggleAttribute("persist", Boolean(value)); }
+  get persist() {
+    return this.hasAttribute("persist");
+  }
+  set persist(value) {
+    this.toggleAttribute("persist", Boolean(value));
+  }
 
-  get storageKey() { return this.getAttribute("storage-key") || this.#getDefaultStorageKey(); }
-  set storageKey(value) { this.setAttribute("storage-key", String(value)); }
-
+  get storageKey() {
+    return this.getAttribute("storage-key") || this.#getDefaultStorageKey();
+  }
+  set storageKey(value) {
+    this.setAttribute("storage-key", String(value));
+  }
 
   // --- Private Helper Methods ---
 
@@ -173,7 +200,10 @@ class EditableImage extends HTMLElement {
     this.#container.appendChild(this.#overlay);
 
     // Edit Icon (inside overlay, no button)
-    this.#editIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    this.#editIcon = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "svg"
+    );
     this.#editIcon.setAttribute("width", "24"); // Base size, controlled by CSS var
     this.#editIcon.setAttribute("height", "24"); // Base size, controlled by CSS var
     this.#editIcon.setAttribute("viewBox", "0 0 24 24");
@@ -188,7 +218,6 @@ class EditableImage extends HTMLElement {
         <title>Edit Image</title> <path d="M16 5h6"/><path d="M19 2v6"/><path d="M21 11.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/><circle cx="9" cy="9" r="2"/>
     `;
     this.#overlay.appendChild(this.#editIcon);
-
 
     // Hidden File Input
     this.#fileInput = document.createElement("input");
@@ -331,8 +360,8 @@ class EditableImage extends HTMLElement {
   #handleSlotChange = () => {
     // console.log("EditableImage: Slot content changed.");
     if (this.#imageElement) {
-        this.#imageElement.onerror = null;
-        this.#imageElement.removeAttribute('part'); // Clean up part from old image
+      this.#imageElement.onerror = null;
+      this.#imageElement.removeAttribute("part"); // Clean up part from old image
     }
     this.#findAndInitializeSlottedImage();
     this.#updateRendering();
@@ -342,42 +371,43 @@ class EditableImage extends HTMLElement {
   #findAndInitializeSlottedImage() {
     // (This method remains largely the same, ensuring 'part="image"' is added)
     const assignedNodes = this.#slot.assignedNodes({ flatten: true });
-    const newImageElement = assignedNodes.find(node => node.nodeName === 'IMG');
+    const newImageElement = assignedNodes.find(
+      (node) => node.nodeName === "IMG"
+    );
 
     if (newImageElement) {
-        this.#imageElement = newImageElement;
-        // console.log("EditableImage: Found slotted image:", this.#imageElement);
+      this.#imageElement = newImageElement;
+      // console.log("EditableImage: Found slotted image:", this.#imageElement);
 
-        this.#imageElement.setAttribute('part', 'image'); // Ensure part is set
-        this.#imageElement.onerror = this.#handleImageError;
+      this.#imageElement.setAttribute("part", "image"); // Ensure part is set
+      this.#imageElement.onerror = this.#handleImageError;
 
-        const componentSrc = this.getAttribute('src');
-        const componentAlt = this.getAttribute('alt');
-        const imageSrc = this.#imageElement.getAttribute('src');
-        const imageAlt = this.#imageElement.getAttribute('alt');
+      const componentSrc = this.getAttribute("src");
+      const componentAlt = this.getAttribute("alt");
+      const imageSrc = this.#imageElement.getAttribute("src");
+      const imageAlt = this.#imageElement.getAttribute("alt");
 
-        // Sync logic (same as before)
-        if (componentSrc !== null) {
-            if (this.#imageElement.src !== componentSrc) {
-                 this.#imageElement.src = componentSrc;
-            }
-        } else if (imageSrc !== null) {
-             this.setAttribute('src', imageSrc);
+      // Sync logic (same as before)
+      if (componentSrc !== null) {
+        if (this.#imageElement.src !== componentSrc) {
+          this.#imageElement.src = componentSrc;
         }
+      } else if (imageSrc !== null) {
+        this.setAttribute("src", imageSrc);
+      }
 
-        if (componentAlt !== null) {
-            if (this.#imageElement.alt !== componentAlt) {
-                this.#imageElement.alt = componentAlt;
-            }
-        } else if (imageAlt !== null) {
-             this.setAttribute('alt', imageAlt);
-        } else {
-            this.#imageElement.alt = "Editable image";
+      if (componentAlt !== null) {
+        if (this.#imageElement.alt !== componentAlt) {
+          this.#imageElement.alt = componentAlt;
         }
-
+      } else if (imageAlt !== null) {
+        this.setAttribute("alt", imageAlt);
+      } else {
+        this.#imageElement.alt = "Editable image";
+      }
     } else {
-        // console.warn('EditableImage: No <img> element found in the default slot.');
-        this.#imageElement = null;
+      // console.warn('EditableImage: No <img> element found in the default slot.');
+      this.#imageElement = null;
     }
   }
 
@@ -386,12 +416,18 @@ class EditableImage extends HTMLElement {
     if (!this.#imageElement) return;
     const currentImageSrc = this.#imageElement.src;
     if (currentImageSrc !== this.#placeholderSrc) {
-      console.warn(`EditableImage: Failed to load src "${currentImageSrc}". Falling back to placeholder.`);
+      console.warn(
+        `EditableImage: Failed to load src "${currentImageSrc}". Falling back to placeholder.`
+      );
       this.#imageElement.src = this.#placeholderSrc;
     } else {
-      console.error(`EditableImage: Failed to load placeholder image "${this.#placeholderSrc}". Hiding image.`);
-      this.#imageElement.style.setProperty('display', 'none', 'important');
-      this.#container.style.backgroundColor = '#fdd';
+      console.error(
+        `EditableImage: Failed to load placeholder image "${
+          this.#placeholderSrc
+        }". Hiding image.`
+      );
+      this.#imageElement.style.setProperty("display", "none", "important");
+      this.#container.style.backgroundColor = "#fdd";
     }
   };
 
@@ -424,7 +460,8 @@ class EditableImage extends HTMLElement {
         this.#dispatchInputEvent();
         this.#dispatchChangeEvent();
       };
-      reader.onerror = (e) => console.error("EditableImage: Error reading file:", e);
+      reader.onerror = (e) =>
+        console.error("EditableImage: Error reading file:", e);
       reader.readAsDataURL(file);
     }
     event.target.value = "";
@@ -437,27 +474,29 @@ class EditableImage extends HTMLElement {
     const componentSrc = this.src;
     const componentAlt = this.alt || "Editable image";
 
-    this.#imageElement.style.display = '';
-    this.#container.style.backgroundColor = '';
+    this.#imageElement.style.display = "";
+    this.#container.style.backgroundColor = "";
 
     if (this.#imageElement.alt !== componentAlt) {
-        this.#imageElement.alt = componentAlt;
+      this.#imageElement.alt = componentAlt;
     }
 
     const currentImageSrc = this.#imageElement.src;
     if (componentSrc) {
-        if (currentImageSrc !== componentSrc) {
-            this.#imageElement.src = componentSrc;
-        }
+      if (currentImageSrc !== componentSrc) {
+        this.#imageElement.src = componentSrc;
+      }
     } else {
-         if (currentImageSrc !== this.#placeholderSrc && currentImageSrc !== '') {
-            this.#imageElement.src = this.#placeholderSrc;
-         } else if (currentImageSrc === '' && this.#imageElement.hasAttribute('src')) {
-             this.#imageElement.removeAttribute('src');
-         }
+      if (currentImageSrc !== this.#placeholderSrc && currentImageSrc !== "") {
+        this.#imageElement.src = this.#placeholderSrc;
+      } else if (
+        currentImageSrc === "" &&
+        this.#imageElement.hasAttribute("src")
+      ) {
+        this.#imageElement.removeAttribute("src");
+      }
     }
   }
-
 
   #updateEditableState() {
     // Slightly simplified: CSS now handles cursor and overlay visibility based on attributes
@@ -469,40 +508,64 @@ class EditableImage extends HTMLElement {
   // --- Event Dispatchers ---
   #dispatchInputEvent() {
     // (This method remains the same)
-    this.dispatchEvent(new CustomEvent("input", { detail: { src: this.src }, bubbles: true, composed: true }));
+    this.dispatchEvent(
+      new CustomEvent("input", {
+        detail: { src: this.src },
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 
   #dispatchChangeEvent() {
     // (This method remains the same)
-    this.dispatchEvent(new CustomEvent("change", { detail: { src: this.src }, bubbles: true, composed: true }));
+    this.dispatchEvent(
+      new CustomEvent("change", {
+        detail: { src: this.src },
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 
   // --- Persistence Methods ---
-  #getDefaultStorageKey() { /* (Same as before) */
+  #getDefaultStorageKey() {
+    /* (Same as before) */
     if (this.id) return `editable-image-${this.id}`;
     try {
       const siblings = document.querySelectorAll(this.localName);
       const index = Array.from(siblings).indexOf(this);
       return `editable-image-${this.localName}-${index}`;
     } catch (e) {
-      console.warn("EditableImage: Could not determine stable default storage key. Using random key.");
-      return `editable-image-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      console.warn(
+        "EditableImage: Could not determine stable default storage key. Using random key."
+      );
+      return `editable-image-${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(2, 9)}`;
     }
   }
-  #saveToLocalStorage() { /* (Same as before) */
+  #saveToLocalStorage() {
+    /* (Same as before) */
     if (!this.persist) return;
     const key = this.storageKey;
     const altKey = `${key}-alt`;
     try {
       const currentSrc = this.src;
       const currentAlt = this.alt;
-      if (currentSrc) localStorage.setItem(key, currentSrc); else localStorage.removeItem(key);
-      if (currentAlt) localStorage.setItem(altKey, currentAlt); else localStorage.removeItem(altKey);
+      if (currentSrc) localStorage.setItem(key, currentSrc);
+      else localStorage.removeItem(key);
+      if (currentAlt) localStorage.setItem(altKey, currentAlt);
+      else localStorage.removeItem(altKey);
     } catch (error) {
-      console.warn(`EditableImage: Failed to save state to localStorage (key: ${key}). Error:`, error);
+      console.warn(
+        `EditableImage: Failed to save state to localStorage (key: ${key}). Error:`,
+        error
+      );
     }
   }
-  #loadFromLocalStorage() { /* (Same as before) */
+  #loadFromLocalStorage() {
+    /* (Same as before) */
     if (!this.persist || !this.#isInitialized) return;
     const key = this.storageKey;
     const altKey = `${key}-alt`;
@@ -514,7 +577,10 @@ class EditableImage extends HTMLElement {
       if (savedAlt !== null && savedAlt !== this.alt) this.alt = savedAlt;
       else if (savedAlt === null && this.alt !== "") this.alt = "";
     } catch (error) {
-      console.warn(`EditableImage: Failed to load state from localStorage (key: ${key}). Error:`, error);
+      console.warn(
+        `EditableImage: Failed to load state from localStorage (key: ${key}). Error:`,
+        error
+      );
     }
   }
 }
