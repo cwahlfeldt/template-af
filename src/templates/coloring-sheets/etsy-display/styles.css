@@ -32,7 +32,6 @@
   flex: 1;
   position: relative;
   overflow: hidden;
-
 }
 
 /* Base image styling */
@@ -91,7 +90,7 @@
 .image-6 {
   transform: rotate(-18deg);
   top: 1.7rem;
-  left: 15rem;
+  left: 17rem;
   z-index: 13;
 }
 
